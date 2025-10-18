@@ -1,0 +1,28 @@
+# Ignore data files (but keep structure)
+data/*.json
+data/backup/*.backup_*
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Keep folder structure
+!data/.gitkeep
+!data/backup/.gitkeep
