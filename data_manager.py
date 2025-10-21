@@ -2,6 +2,7 @@ import json # built in library for handling JSON files
 import csv # built in library for handling CSV files
 import os # built in library for handling OS operations (files, folders, paths)
 import shutil # built in library for high-level file operations like copy, move, delete
+from dataclasses import field
 from datetime import datetime, timedelta # built in library for date and time
 
 class DataManager:
@@ -12,10 +13,25 @@ class DataManager:
         self.users_file = 'data/users.json'
         self.users_csv = 'data/users.csv'
         self.backup_dir = 'data/backup'
+        self.transactions_file = 'data/transactions.json'
+        self.transactions_csv = 'data/transactions.csv'
         
         # Ensure folders are present if not create them
         os.makedirs('data', exist_ok=True) # Ensure data directory exists
         os.makedirs(self.backup_dir, exist_ok=True) # Ensure backup directory exists
+
+        # ensure transactions storage exists
+        if not os.path.exists(self.transactions_file):
+            with open(self.transactions_file, 'w', encoding='utf-8') as f:
+                json.dump([], f, ensure_ascii=False, indent=4)
+
+        if not os.path.exists(self.transactions_csv):
+            with open(self.transactions_csv, 'w',newline= '', encoding='utf-8') as csvfile:
+                fieldnames = [
+                    'transaction_id','user_id','type', 'amount',
+                    'category', 'date', 'description','payment_method']
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
 
         # Clean up old backups on startup
         self._cleanup_old_backups(days=10)
@@ -113,3 +129,49 @@ class DataManager:
                 
         except Exception as e:
             print(f"⚠️ Backup cleanup failed: {e}")
+
+
+    def load_transactions(self) -> list[dict]:
+        try:
+            with open(self.transactions_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    return data
+                else:
+                    print("⚠️ transactions.json is not a list.")
+                    return []
+        except (FileNotFoundError, json.JSONDecodeError):
+            print("⚠️ Could not read transactions.json")
+            return []
+
+    def save_transactions(self, transactions: list[dict]) -> None:
+
+        #as json
+        with open(self.transactions_file, 'w', encoding='utf-8') as f:
+            json.dump(transactions, f, ensure_ascii=False, indent=4)
+
+        #csv
+        fieldnames = [
+            'transaction_id', 'user_id', 'type', 'amount',
+            'category', 'date', 'description', 'payment_method']
+        with open(self.transactions_csv, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+
+            for t in transactions:
+                row = {
+                    'transaction_id': t.get('transaction_id',''),
+                    'user_id': t.get('user_id',''),
+                    'type': t.get('type',''),
+                    'amount': t.get('amount',''),
+                    'category': t.get('category',''),
+                    'date': t.get('date',''),
+                    'description': t.get('description',''),
+                    'payment_method': t.get('payment_method','')
+                }
+                writer.writerow(row)
+
+        self._backup_file(self.transactions_file)
+        self._backup_file(self.transactions_csv)
+
+
