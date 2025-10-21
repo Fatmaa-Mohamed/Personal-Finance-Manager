@@ -59,7 +59,9 @@ class DataManager:
             for user_data in users.values():
                 writer.writerow(user_data)
 
-        # Create backups
+    # Backup once function
+    def create_backup_once(self):
+        """Creates one backup of both JSON and CSV files when exiting."""
         self._backup_file(self.users_file)
         self._backup_file(self.users_csv)
     

@@ -1,6 +1,6 @@
 from user_manager import UserManager
 from data_manager import DataManager
-from transactions import TransactionManager # not used yet
+from transactions import TransactionManager
 from utils import pause
 
 class PersonalFinanceApp:
@@ -9,7 +9,7 @@ class PersonalFinanceApp:
     def __init__(self):
         self.data_manager = DataManager() # Used for JSON files handling
         self.user_manager = UserManager(self.data_manager) # UserManager reads and writes users through data_manager
-        self.transaction_manager = TransactionManager(self.data_manager) # TransactionManager reads and writes transactions through data_manager
+        self.transaction_manager = TransactionManager() # TransactionManager reads and writes transactions through data_manager
 
     # ---------------------------
     # MAIN MENU
@@ -60,9 +60,9 @@ class PersonalFinanceApp:
             elif choice == "3":
                 self.user_manager.switch_user()
             elif choice == "4":
-                self.transaction_manager.add_transaction(self.user_manager.current_user)
+                self.transaction_manager.add_transaction({"user": self.user_manager.current_user["username"], "type": "test"})
             elif choice == "5":
-                self.transaction_manager.view_transactions(self.user_manager.current_user)
+                self.transaction_manager.view_transactions()
             elif choice == "6":
                 self.user_manager.logout()  # Auto-saves and clears user
                 return  # goes back to main menu
@@ -74,7 +74,7 @@ class PersonalFinanceApp:
     # EXIT PROGRAM
     # ---------------------------
     def exit_program(self):
-        # no need to save users, logout already does it
+        self.data_manager.create_backup_once()
         self.transaction_manager.save_transactions()
         print("👋🏼 Goodbye!")
 
