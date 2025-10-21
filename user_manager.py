@@ -66,16 +66,24 @@ class UserManager:
             return None
 
         name = input("Enter name: ").strip()
-        password = getpass.getpass("Enter password: ").strip()
-        user = self._find_user_by_name(name)
-
-        if not user or user['password'] != hash_password(password):
-            print("❌ Invalid username or password!")
+        user = self._find_user_by_name(name) # Check if user name exists as a user
+        if not user:
+            print("❌ No account found with that name.")
             return None
-
-        self.current_user = user
-        print(f"✅ Welcome back, {user['name']}!")
-        return user
+        
+        while True: # Loop until correct password is entered
+            password = getpass.getpass("Enter password (or 'q' to quit): ").strip()
+            # Allow exit
+            if password.lower() in ('q', 'quit'):
+                print("↩️ Returning to main menu...")
+                return None
+            
+            if user['password'] == hash_password(password):
+                self.current_user = user
+                print(f"✅ Welcome back, {user['name']}!")
+                return user
+            else:
+                print("❌ Wrong password! Please try again.\n")
 
     # -----------------------------
     # VIEW PROFILE
@@ -99,11 +107,19 @@ class UserManager:
         if not self.current_user: # Again prevents errors if no one is logged in.
             print("❌ Please login first!")
             return
+        
         print("\n🔑 Change Password")
-        old_pass = getpass.getpass("Enter old password: ").strip()
-        if self.current_user['password'] != hash_password(old_pass):
-            print("❌ Incorrect old password!")
-            return
+        # Keep asking for the old password until it's correct
+        while True:
+            old_pass = getpass.getpass("Enter old password (or 'q' to quit): ").strip()
+
+            if old_pass.lower() in ('q', 'quit'):
+                print("↩️ Returning to user menu...")
+                return None
+            
+            if self.current_user['password'] == hash_password(old_pass):
+                break
+            print("❌ Incorrect old password! Please try again.")
 
         while True:
             new_pass = getpass.getpass("Enter new password: ").strip()
@@ -143,6 +159,12 @@ class UserManager:
             return None
 
         selected = users_list[choice - 1] # Retrieves the chosen user dictionary from the indices
+
+        # Check if selected user is the same as current
+        if self.current_user and selected['user_id'] == self.current_user['user_id']:
+            print(f"ℹ️ You are already logged in as '{selected['name']}'.")
+            return None
+        
         password = getpass.getpass(f"Password for {selected['name']}: ").strip()
 
         if selected['password'] != hash_password(password): # Verify the password
