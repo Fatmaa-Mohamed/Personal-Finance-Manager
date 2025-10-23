@@ -143,6 +143,39 @@ class TransactionManager:
         )
         print(f"✅ Saved expense #{t['transaction_id']}!\n")
 
+    # ----------- Add transaction loop ------------
+    def add_transactions_loop(self, user_id: str):
+        print("\n➕ Add Transactions (type 'q' to stop)\n")
+
+        added_count = 0
+        while True:
+            t_type = input("type[income/expense] or q to quit: ")
+            if t_type in ("q", "quit"):
+                break
+            if t_type not in ("income", "expense"):
+                print("❌ Please enter 'income' or 'expense' (or 'q' to quit).")
+                continue
+
+            amount = input_positive_float("Amount: ")
+            category = input_non_empty("Category: ")
+            input_date = input(f"Date: (Enter for {today_str()}): ").strip()
+            date = input_date if input_date else today_str()
+            description = input("Description: ").strip()
+            payment_method = input_non_empty("Payment Method: ").strip()
+            t = self.add_transaction(
+                user_id = user_id,
+                t_type = t_type,
+                amount = amount,
+                category = category,
+                date = date,
+                description = description,
+                payment_method =payment_method
+            )
+            print(f"✅ Saved {t_type} #{t['transaction_id']}!\n")
+            added_count += 1
+
+        print(f"✔️ Done. Added {added_count} transaction(s).\n")
+
     #----------- edit transaction ----------------
     def edit_transaction(self, user_id: str):
         user_txs = self.list_transactions(user_id)

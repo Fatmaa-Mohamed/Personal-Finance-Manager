@@ -1,0 +1,2 @@
+transaction_id,user_id,type,amount,category,date,description,payment_method
+TXN001,db1b1d8c,income,230.0,salary,23/10/2025,salary,cash
