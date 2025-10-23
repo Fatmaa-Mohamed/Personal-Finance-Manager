@@ -1,4 +1,5 @@
 from utils import input_non_empty, input_positive_float, today_str
+from decimal import Decimal as decimal
 class TransactionManager:
     def __init__(self, data_manager):
         self.data_manager = data_manager
@@ -28,7 +29,7 @@ class TransactionManager:
 
     # CRUD operations
    # -------------------- Create ----------------
-    def add_transaction(self, user_id: str, t_type: str, amount: float, category: str,
+    def add_transaction(self, user_id: str, t_type: str, amount: decimal, category: str,
                         date:str, description:str ,payment_method: str) -> dict:
 
         t = {
@@ -205,7 +206,7 @@ class TransactionManager:
             new_amount = tx["amount"]
         else:
             try:
-                val = float(raw_amount)
+                val = decimal(raw_amount)
                 if val <= 0:
                     print("⚠️ Amount must be positive. Keeping old.")
                     new_amount = tx["amount"]

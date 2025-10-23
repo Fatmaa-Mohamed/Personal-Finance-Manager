@@ -13,6 +13,7 @@ class DataManager:
         self.users_file = 'data/users.json'
         self.users_csv = 'data/users.csv'
         self.backup_dir = 'data/backup'
+        self.transactions = self.load_transactions()
         self.transactions_file = 'data/transactions.json'
         self.transactions_csv = 'data/transactions.csv'
         
@@ -146,6 +147,12 @@ class DataManager:
             print("⚠️ Could not read transactions.json")
             return []
 
+    def get_transactions(self, user_id):
+        if not hasattr(self, 'transactions'):
+            return []
+        return [t for t in self.transactions if t.get('user_id') == user_id]
+
+
     def save_transactions(self, transactions: list[dict]) -> None:
 
         #as json
@@ -172,6 +179,8 @@ class DataManager:
                     'payment_method': t.get('payment_method','')
                 }
                 writer.writerow(row)
+
+        self.transactions = transactions
 
         self._backup_file(self.transactions_file)
         self._backup_file(self.transactions_csv)
