@@ -1,4 +1,5 @@
 import csv
+import os
 import re
 import hashlib
 from datetime import datetime
@@ -46,3 +47,5 @@ def input_positive_float(prompt: str) -> float:
 def today_str() -> str:
     return datetime.now().strftime("%d/%m/%Y")
 
+def clear_screen():
+    os.system('cls' if os.name == 'nt' else 'clear')

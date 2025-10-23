@@ -13,7 +13,6 @@ class DataManager:
         self.users_file = 'data/users.json'
         self.users_csv = 'data/users.csv'
         self.backup_dir = 'data/backup'
-        self.transactions = self.load_transactions()
         self.transactions_file = 'data/transactions.json'
         self.transactions_csv = 'data/transactions.csv'
         
@@ -34,6 +33,7 @@ class DataManager:
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writeheader()
 
+        self.transactions = self.load_transactions()
         # Clean up old backups on startup
         self._cleanup_old_backups(days=10)
 
