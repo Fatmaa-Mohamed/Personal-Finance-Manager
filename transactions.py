@@ -266,6 +266,10 @@ class TransactionManager:
         else:
             print("❌ Delete failed.\n")
 
+    # ----------- AF: Recurring transaction ------------
+    def recurring_transaction(self, user_id: str):
+        user_txs = self.list_transactions(user_id)
+
 
     def menu(self, user_id: str):
         while True:
