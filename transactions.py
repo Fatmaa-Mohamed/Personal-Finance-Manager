@@ -1,8 +1,8 @@
-from utils import input_non_empty, input_positive_float, today_str
+from utils import input_non_empty, input_positive_float, today_str, next_yearly_date, next_monthly_date, today_date, parse_date, format_date, pause
+from decimal import Decimal as decimal
 class TransactionManager:
     def __init__(self, data_manager):
         self.data_manager = data_manager
-        self.transactions = self.data_manager.load_transactions()
 
         try:
             self.transactions = self.data_manager.load_transactions()
@@ -28,7 +28,7 @@ class TransactionManager:
 
     # CRUD operations
    # -------------------- Create ----------------
-    def add_transaction(self, user_id: str, t_type: str, amount: float, category: str,
+    def add_transaction(self, user_id: str, t_type: str, amount: decimal, category: str,
                         date:str, description:str ,payment_method: str) -> dict:
 
         t = {
@@ -70,12 +70,18 @@ class TransactionManager:
                 self._save()
                 return True
         return False
-
+    
     def compute_total(self, user_id: str) -> dict:
-        income = sum(t["amount"] for t in self.transactions
-                     if t.get("user_id") == user_id and t.get("type") == "income")
-        expense = sum(t["amount"] for t in self.transactions
-                      if t.get("user_id") == user_id and t.get("type") == "expense")
+        income = sum(
+            decimal(str(t["amount"]))
+            for t in self.transactions
+            if t.get("user_id") == user_id and t.get("type") == "income"
+        )
+        expense = sum(
+            decimal(str(t["amount"]))
+            for t in self.transactions
+            if t.get("user_id") == user_id and t.get("type") == "expense"
+        )
         return {"income": income, "expense": expense, "balance": income - expense}
 
 
@@ -92,56 +98,47 @@ class TransactionManager:
         print("-" * 90)
 
         for t in user_txs:
-            print(f"{t['transaction_id']:<8} {t['type']:<8} {t['amount']:>10.2f}  "
+            print(f"{t['transaction_id']:<8} {t['type']:<8} {t['amount']:>10}  "
                   f"{t['category']:<14} {t['date']:<10}  {t['payment_method']:<12} {t['description']}")
 
         print("-" * 90)
         total = self.compute_total(user_id)
-        print(f"Income:  {total['income']:.2f}")
-        print(f"Expense: {total['expense']:.2f}")
-        print(f"Balance: {total['balance']:.2f}\n")
+        print(f"Income:  {total['income']}")
+        print(f"Expense: {total['expense']}")
+        print(f"Balance: {total['balance']}\n")
 
-    # --------- add income -------------
-    def add_income(self, user_id: str):
-        print("\n➕ Add INCOME")
-        amount = input_positive_float("Amount: ")
-        category = input_non_empty("Category: ")
-        input_date = input(f"Date: (Enter for {today_str()}): ").strip()
-        date = input_date if input_date else today_str()
-        description = input("Description: ").strip()
-        payment_method = input_non_empty("Payment Method: ").strip()
+    # ----------- Add transaction loop ------------
+    def add_transactions_loop(self, user_id: str):
+        print("\n➕ Add Transactions (type 'q' to stop)\n")
 
-        t=self.add_transaction(
-            user_id=user_id,
-            t_type="income",
-            amount=amount,
-            category=category,
-            date=date,
-            description=description,
-            payment_method=payment_method
-        )
+        added_count = 0
+        while True:
+            t_type = input("type[income/expense] or q to quit: ")
+            if t_type in ("q", "quit"):
+                break
+            if t_type not in ("income", "expense"):
+                print("❌ Please enter 'income' or 'expense' (or 'q' to quit).")
+                continue
 
-        print(f"✅ Saved income #{t['transaction_id']}!\n")
+            amount = input_positive_float("Amount: ")
+            category = input_non_empty("Category: ")
+            input_date = input(f"Date: (Enter for {today_str()}): ").strip()
+            date = input_date if input_date else today_str()
+            description = input("Description: ").strip()
+            payment_method = input_non_empty("Payment Method: ").strip()
+            t = self.add_transaction(
+                user_id = user_id,
+                t_type = t_type,
+                amount = str(amount),
+                category = category,
+                date = date,
+                description = description,
+                payment_method = payment_method
+            )
+            print(f"✅ Saved {t_type} #{t['transaction_id']}!\n")
+            added_count += 1
 
-    # -------- add expense --------
-    def add_expense(self, user_id: str):
-        print("\n➖ Add EXPENSE")
-        amount = input_positive_float("Amount: ")
-        category = input_non_empty("Category: ")
-        input_date = input(f"Date: (Enter for {today_str()}): ").strip()
-        date = input_date if input_date else today_str()
-        description = input("Description: ").strip()
-        payment_method = input_non_empty("Payment Method: ").strip()
-        t = self.add_transaction(
-            user_id=user_id,
-            t_type="expense",
-            amount=amount,
-            category=category,
-            date=date,
-            description=description,
-            payment_method=payment_method
-        )
-        print(f"✅ Saved expense #{t['transaction_id']}!\n")
+        print(f"✔️ Done. Added {added_count} transaction(s).\n")
 
     #----------- edit transaction ----------------
     def edit_transaction(self, user_id: str):
@@ -172,7 +169,7 @@ class TransactionManager:
             new_amount = tx["amount"]
         else:
             try:
-                val = float(raw_amount)
+                val = decimal(raw_amount)
                 if val <= 0:
                     print("⚠️ Amount must be positive. Keeping old.")
                     new_amount = tx["amount"]
@@ -232,40 +229,119 @@ class TransactionManager:
         else:
             print("❌ Delete failed.\n")
 
+    # ----------- AF: Recurring transaction ------------
+    def recurring_transaction(self, user_id: str):
+        print("\n🔁 Add RECURRING (one or many occurrences)")
 
+        #validate input
+        while True:
+            t_type = input("type[income/expense]: ]").strip().lower()
+            if t_type in {"income", "expense"}:
+                break
+            print("Please enter either 'income' or 'expense'.")
+
+        amount = input_positive_float("Amount: ")
+        category = input_non_empty("Category: ")
+        description = input("Description: ").strip()
+        payment_method = input_non_empty("Payment Method: ")
+
+        while True:
+            freq = input("Frequency[monthly/yearly]: ").strip().lower()
+            if freq in {"monthly", "yearly"}:
+                break
+            print("Please enter 'monthly' or 'yearly'.")
+
+        occurrence = input("How many occurrences to create now? (Enter for 1): ").strip()
+        try:
+            occ_count = int(occurrence) if occurrence else 1
+            if occ_count <= 0:
+                occ_count = 1
+        except ValueError:
+            occ_count = 1
+
+        today = today_date()
+        created = 0
+
+        if freq == "monthly":
+            while True:
+                try:
+                    day = int(input("Day of month (1–31): ").strip())
+                    if 1 <= day <= 31:
+                        break
+                except ValueError:
+                    pass
+                print("Enter a number between 1 and 31.")
+
+        date_obj = next_monthly_date(today, day)
+
+        for _ in range(occ_count):
+            t = self.add_transaction(
+                user_id=user_id,
+                t_type=t_type,
+                amount=amount,
+                category=category,
+                description=description,
+                payment_method=payment_method,
+                date=format_date(date_obj),
+            )
+            print(f"✅ Saved {t_type} #{t['transaction_id']} on {format_date(date_obj)}")
+            created += 1
+            # Move to the next month
+            date_obj = next_monthly_date(date_obj.replace(day=1), day)
+
+        else: #yearly occurrence
+            while True:
+                raw = input("Date each year (dd/mm): ").strip()
+                try:
+                    dd, mm = raw.split("/")
+                    day = int(dd)
+                    month = int(mm)
+                    if 1 <= month <= 12 and 1 <= day <= 31:
+                        break
+                except Exception:
+                    pass
+                print("Please enter a valid dd/mm like 05/10")
+
+            date_obj = next_yearly_date(today, day, month)
+
+            for _ in range(occ_count):
+                t = self.add_transaction(
+                    user_id=user_id,
+                    t_type=t_type,
+                    amount=amount,
+                    category=category,
+                    date=format_date(date_obj),
+                    description=description,
+                    payment_method=payment_method
+                )
+                print(f"✅ Saved {t_type} #{t['transaction_id']} on {format_date(date_obj)}")
+                created += 1
+                # Move to the next year
+                date_obj = next_yearly_date(date_obj, day, month)
+
+        print(f"✔️ Done. Created {created} occurrence(s).\n")
+
+    #-------------------------Transactions menu----------------------------
     def menu(self, user_id: str):
         while True:
-            print("""
-                    === Transactions ===
-                    1) Add Income
-                    2) Add Expense
-                    3) View All
-                    4) Edit
-                    5) Delete
-                    6) Back
-                    """)
+            print("=== 💼 TRANSACTIONS MENU ===")
+            print("1. ➕ Add Transaction")
+            print("2. 📋 View All Transactions")
+            print("3. ✏️ Edit Transaction")
+            print("4. 🗑️ Delete Transaction")
+            print("5. 🔙 Back")
+
             choice = input("Enter your choice: ").strip()
             if choice == "1":
-                self.add_income(user_id)
+                self.add_transactions_loop(user_id)
             elif choice == "2":
-                self.add_expense(user_id)
-            elif choice == "3":
                 self.print_all_for_user(user_id)
-            elif choice == "4":
+            elif choice == "3":
                 self.edit_transaction(user_id)
-            elif choice == "5":
+            elif choice == "4":
                 self.delete_transaction_interactive(user_id)
-                break
+            elif choice == "5":
+                return
             else:
                 print("❌ Invalid choice.")
-
-
-
-
-
-
-
-
-
-
-
+            pause()

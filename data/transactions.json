@@ -1,0 +1,52 @@
+[
+    {
+        "transaction_id": "TXN002",
+        "user_id": "db1b1d8c",
+        "type": "income",
+        "amount": "1000",
+        "category": "salary",
+        "date": "25/10/2025",
+        "description": "salary",
+        "payment_method": "visa"
+    },
+    {
+        "transaction_id": "TXN003",
+        "user_id": "db1b1d8c",
+        "type": "expense",
+        "amount": "10",
+        "category": "transportation",
+        "date": "25/10/2025",
+        "description": "transportation",
+        "payment_method": "cash"
+    },
+    {
+        "transaction_id": "TXN004",
+        "user_id": "db1b1d8c",
+        "type": "income",
+        "amount": "50",
+        "category": "Transport",
+        "date": "25/10/2025",
+        "description": "Transport",
+        "payment_method": "visa"
+    },
+    {
+        "transaction_id": "TXN005",
+        "user_id": "db1b1d8c",
+        "type": "expense",
+        "amount": "20",
+        "category": "food",
+        "date": "25/10/2025",
+        "description": "launch",
+        "payment_method": "cash"
+    },
+    {
+        "transaction_id": "TXN006",
+        "user_id": "db1b1d8c",
+        "type": "expense",
+        "amount": "50",
+        "category": "entertainment",
+        "date": "26/10/2025",
+        "description": "entertainment",
+        "payment_method": "cash"
+    }
+]
