@@ -1,7 +1,9 @@
 from user_manager import UserManager
 from data_manager import DataManager
 from transactions import TransactionManager
+from reports import Reports
 from utils import pause
+import atexit
 
 class PersonalFinanceApp:
     """Main app controller."""
@@ -10,6 +12,7 @@ class PersonalFinanceApp:
         self.data_manager = DataManager() # Used for JSON files handling
         self.user_manager = UserManager(self.data_manager) # UserManager reads and writes users through data_manager
         self.transaction_manager = TransactionManager(self.data_manager) # TransactionManager reads and writes transactions through data_manager
+        self.reports = Reports(self.data_manager)
         self.current_user = None
         self.current_user_id = None
 
@@ -52,12 +55,12 @@ class PersonalFinanceApp:
             print("1. 👁️ View Profile")
             print("2. 🔑 Change Password")
             print("3. 🔄 Switch User")
-            print("4. ➕ Add Transaction")
-            print("5. 📊 View Transactions")
+            print("4. 💰 Transactions Menu")
+            print("5. 📊 Reports Menu")
             print("6. 🔒 Logout")
-
+            
             choice = input("👉🏼 Choose an option (1-6): ").strip()
-
+            
             if choice == "1":
                 self.user_manager.view_profile()
             elif choice == "2":
@@ -65,12 +68,12 @@ class PersonalFinanceApp:
             elif choice == "3":
                 self.user_manager.switch_user()
             elif choice == "4":
-                self.transaction_manager.add_transactions_loop(self.current_user_id)
+                self.transaction_manager.menu(self.current_user_id)
             elif choice == "5":
-                self.transaction_manager.print_all_for_user(self.current_user_id)
+                self.reports.menu(self.current_user_id)
             elif choice == "6":
-                self.user_manager.logout()  # Auto-saves and clears user
-                return  # goes back to main menu
+                self.user_manager.logout()
+                return
             else:
                 print("❌ Invalid choice.")
             pause()
@@ -79,10 +82,9 @@ class PersonalFinanceApp:
     # EXIT PROGRAM
     # ---------------------------
     def exit_program(self):
-        self.data_manager.create_backup_once()
-        self.data_manager.save_transactions()
         print("👋🏼 Goodbye!")
 
 if __name__ == "__main__":
     app = PersonalFinanceApp()
+    atexit.register(app.data_manager.create_backup_once) # insure backup is created even if we don't exit program properly
     app.run()
