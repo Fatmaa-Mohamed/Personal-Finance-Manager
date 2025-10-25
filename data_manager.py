@@ -2,8 +2,8 @@ import json # built in library for handling JSON files
 import csv # built in library for handling CSV files
 import os # built in library for handling OS operations (files, folders, paths)
 import shutil # built in library for high-level file operations like copy, move, delete
-from dataclasses import field
 from datetime import datetime, timedelta # built in library for date and time
+from decimal import Decimal
 
 class DataManager:
     """Handles reading and writing user and transaction data to JSON/CSV files."""
@@ -81,6 +81,8 @@ class DataManager:
         """Creates one backup of both JSON and CSV files when exiting."""
         self._backup_file(self.users_file)
         self._backup_file(self.users_csv)
+        self._backup_file(self.transactions_file)
+        self._backup_file(self.transactions_csv)
     
     # -----------------------------------------------------
     # BACKUP HELPER (private)
@@ -139,6 +141,13 @@ class DataManager:
             with open(self.transactions_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 if isinstance(data, list):
+                    for t in data:
+                        if 'amount' in t:
+                            try:
+                                # Convert any numeric or string type to Decimal safely
+                                t['amount'] = Decimal(str(t['amount']))
+                            except Exception:
+                                t['amount'] = Decimal('0')
                     return data
                 else:
                     print("⚠️ transactions.json is not a list.")
@@ -151,38 +160,37 @@ class DataManager:
         if not hasattr(self, 'transactions'):
             return []
         return [t for t in self.transactions if t.get('user_id') == user_id]
-
-
+    
     def save_transactions(self, transactions: list[dict]) -> None:
-
-        #as json
+        # Convert Decimals to strings so JSON/CSV can handle them
+        serializable_transactions = []
+        for t in transactions:
+            t_copy = t.copy()
+            if isinstance(t_copy.get("amount"), Decimal):
+                t_copy["amount"] = str(t_copy["amount"])
+            serializable_transactions.append(t_copy)
+            # ---- Save as JSON ----
         with open(self.transactions_file, 'w', encoding='utf-8') as f:
-            json.dump(transactions, f, ensure_ascii=False, indent=4)
-
-        #csv
+            json.dump(serializable_transactions, f, ensure_ascii=False, indent=4)
+            # ---- Save as CSV ----
         fieldnames = [
             'transaction_id', 'user_id', 'type', 'amount',
-            'category', 'date', 'description', 'payment_method']
+            'category', 'date', 'description', 'payment_method'
+        ]
         with open(self.transactions_csv, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
-
-            for t in transactions:
+                
+            for t in serializable_transactions:
                 row = {
-                    'transaction_id': t.get('transaction_id',''),
-                    'user_id': t.get('user_id',''),
-                    'type': t.get('type',''),
-                    'amount': t.get('amount',''),
-                    'category': t.get('category',''),
-                    'date': t.get('date',''),
-                    'description': t.get('description',''),
-                    'payment_method': t.get('payment_method','')
+                    'transaction_id': t.get('transaction_id', ''),
+                    'user_id': t.get('user_id', ''),
+                    'type': t.get('type', ''),
+                    'amount': t.get('amount', ''),  # already string
+                    'category': t.get('category', ''),
+                    'date': t.get('date', ''),
+                    'description': t.get('description', ''),
+                    'payment_method': t.get('payment_method', '')
                 }
                 writer.writerow(row)
-
-        self.transactions = transactions
-
-        self._backup_file(self.transactions_file)
-        self._backup_file(self.transactions_csv)
-
-
+        self.transactions = self.load_transactions()
