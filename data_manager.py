@@ -186,3 +186,79 @@ class DataManager:
         self._backup_file(self.transactions_csv)
 
 
+    # --------- csv import/export ----------------
+    def export_transactions_csv(self, user_id: str, tx_list: list, path: str):
+        fieldnames = ["transaction_id", "user_id", "type", "amount", "category", "date", "description",
+                      "payment_method"]
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            import csv
+            w = csv.DictWriter(f, fieldnames=fieldnames)
+            w.writeheader()
+            for t in tx_list:
+                if t.get("user_id") != user_id:
+                    continue
+                row = {k: t.get(k, "") for k in fieldnames}
+                w.writerow(row)
+
+    def import_transactions_csv(self, user_id: str, path: str) -> int:
+        if not os.path.exists(path):
+            print(f"❌ File not found: {path}")
+            return 0
+        added = 0
+        with open(path, "r", newline="", encoding="utf-8") as f:
+            import csv
+            r = csv.DictReader(f)
+            # Load current
+            try:
+                txs = self.load_transactions()
+            except Exception:
+                txs = []
+            existing_keys = {(t.get("user_id"), str(t.get("date")), str(t.get("amount")), t.get("category")) for t in
+                             txs}
+            # Append new
+            for row in r:
+                key = (user_id, row.get("date", ""), row.get("amount", ""), row.get("category", ""))
+                if key in existing_keys:
+                    continue
+                row["user_id"] = user_id
+                txs.append(row)
+                added += 1
+        self.save_transactions(txs)
+        return added
+
+    # ------------ load/save budget -------------
+    def load_budgets(self) -> dict:
+        path = "data/budgets.json"
+        if not os.path.exists(path):
+            return {}
+        with open(path, "r", encoding="utf-8") as f:
+            try:
+                return json.load(f)
+            except Exception:
+                return {}
+
+    def save_budgets(self, budgets: dict):
+        path = "data/budgets.json"
+        os.makedirs("data", exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(budgets, f, ensure_ascii=False, indent=2)
+
+    #--------------- load/save goals --------------
+    def load_goals(self) -> list:
+        path = "data/goals.json"
+        if not os.path.exists(path):
+            return []
+        with open(path, "r", encoding="utf-8") as f:
+            try:
+                return json.load(f)
+            except Exception:
+                return []
+
+    def save_goals(self, goals: list):
+        path = "data/goals.json"
+        os.makedirs("data", exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(goals, f, ensure_ascii=False, indent=2)
+
+

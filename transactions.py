@@ -359,6 +359,71 @@ class TransactionManager:
         print(f"✔️ Done. Created {created} occurrence(s).\n")
 
 
+    #--------------- saving goals ----------------
+    def savings_goal_quick(self, user_id: str):
+        """
+        Create/refresh a simple savings goal and show progress.
+        - All transactions where category == "savings" and type == "expense"
+          are counted as contributions toward the goal.
+        - If DataManager has load_goals/save_goals, the goal is persisted/updated.
+        """
+        print("\n🏆 Savings Goal (quick)")
+
+        # 1) Ask user for goal details
+        name = input("Goal name (e.g., 'Emergency Fund') [Enter for 'Savings Goal'] : ").strip() or "Savings Goal"
+        target = input_positive_float("Target amount: ")
+
+        # 2) Compute progress from existing transactions
+        total_saved = 0.0
+        for t in self.transactions:
+            if t.get("user_id") != user_id:
+                continue
+            # Count only 'savings' OUTGOING (expense) as contributions
+            if (str(t.get("category", "")).strip().lower() == "savings"
+                    and str(t.get("type", "")).strip().lower() == "expense"):
+                try:
+                    total_saved += decimal(t.get("amount", 0) or 0)
+                except Exception:
+                    pass
+
+        remaining = max(0.0, decimal(target) - total_saved)
+        pct = 0.0 if decimal(target) <= 0 else min(100.0, (total_saved / decimal(target)) * 100.0)
+
+        # 3) Try to persist in goals.json if DataManager supports it (optional)
+        try:
+            if hasattr(self.data_manager, "load_goals") and hasattr(self.data_manager, "save_goals"):
+                goals = self.data_manager.load_goals() or []
+                # Update existing goal by name if found; else append a new one
+                updated = False
+                for g in goals:
+                    if str(g.get("name", "")).strip().lower() == name.strip().lower():
+                        g["name"] = name
+                        g["target"] = decimal(target)
+                        g["saved_snapshot"] = total_saved  # snapshot at this check
+                        updated = True
+                        break
+                if not updated:
+                    goals.append({
+                        "name": name,
+                        "target": decimal(target),
+                        "saved_snapshot": total_saved
+                    })
+                self.data_manager.save_goals(goals)
+        except Exception:
+            # Persistence is optional; ignore if not available
+            pass
+
+        # 4) Display summary
+        print("\n=== Savings Goal Summary ===")
+        print(f"Goal:       {name}")
+        print(f"Target:     {decimal(target):.2f}")
+        print(f"Saved (via 'savings' expenses): {total_saved:.2f}")
+        print(f"Remaining:  {remaining:.2f}")
+        print(f"Progress:   {pct:5.1f}%")
+        if remaining <= 0:
+            print("🎉 Congrats! You've reached (or exceeded) your savings goal.")
+        print()
+
 
 
     def menu(self, user_id: str):

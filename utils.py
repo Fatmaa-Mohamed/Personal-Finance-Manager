@@ -92,5 +92,13 @@ def next_yearly_date(from_date: date, day: int, month: int) -> date:
     day = min(day, calendar.monthrange(year, month)[1])
     return date(year, month, day)
 
+def bar(value: float, scale: float = 100.0, char: str = "#", width: int = 30) -> str:
+    # small ASCII bar helper used by reports
+    try:
+        n = int(min(width, max(0, value / scale * width)))
+    except Exception:
+        n = 0
+    return char * n
+
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
