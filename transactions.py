@@ -3,6 +3,8 @@ from decimal import Decimal as decimal
 from datetime import timedelta
 class TransactionManager:
     def __init__(self, data_manager):
+        """Initialize the transaction manager and load persisted transactions.
+        Expects a data_manager with load/save methods."""
         self.data_manager = data_manager
 
         try:
@@ -11,6 +13,8 @@ class TransactionManager:
             raise RuntimeError("Data manager has not been initialized.")
 
     def _next_transaction_id(self) -> str:
+        """Return the next sequential transaction ID in the format TXN###.
+        Scans existing records to find the max and increments it."""
         max_num = 0
         for t in self.transactions:
             tid = t.get("transaction_id", "")
@@ -24,6 +28,7 @@ class TransactionManager:
         return f"TXN{max_num + 1:03d}"
 
     def _save(self):
+        """Persist the in-memory transactions list to storage via data_manager."""
         self.data_manager.save_transactions(self.transactions)
 
 
@@ -31,6 +36,8 @@ class TransactionManager:
    # -------------------- Create ----------------
     def add_transaction(self, user_id: str, t_type: str, amount: decimal, category: str,
                         date:str, description:str ,payment_method: str) -> dict:
+        """Create and persist a new transaction record for the given user.
+        Returns the created transaction dict."""
 
         t = {
             "transaction_id": self._next_transaction_id(),
@@ -48,12 +55,15 @@ class TransactionManager:
 
     # ------------ Read -------------
     def list_transactions(self, user_id: str) -> list:
+        """Return all transactions belonging to the given user_id as a list."""
         #return all transactions for a specific user id
         return [t for t in self.transactions if t.get("user_id") == user_id]
 
     # ---------------- update -----------
 
     def update_transaction(self, transaction_id: str, updates: dict) -> bool:
+        """Update fields of a transaction by ID and persist changes.
+        Returns True if updated, False if not found."""
         for i, t in enumerate(self.transactions):
             if t.get("transaction_id") == transaction_id:
                 t.update(updates)
@@ -65,6 +75,8 @@ class TransactionManager:
     #------------------ Delete ----------------
 
     def delete_transaction(self, transaction_id: str) -> bool:
+        """Delete a transaction by ID and persist changes.
+        Returns True if deleted, False if not found."""
         for i, t in enumerate(self.transactions):
             if t.get("transaction_id") == transaction_id:
                 self.transactions.pop(i)
@@ -73,6 +85,8 @@ class TransactionManager:
         return False
 
     def compute_total(self, user_id: str) -> dict:
+        """Compute total income, expense, and balance for the given user.
+        Returns a dict with keys: income, expense, balance."""
         income = sum(
             decimal(str(t["amount"]))
             for t in self.transactions
@@ -89,6 +103,7 @@ class TransactionManager:
     #----------------- interactive GUI ---------------
     # --------- Print all of user transactions --------
     def print_all_for_user(self, user_id):
+        """Print a table of all transactions for the user along with totals."""
         user_txs = self.list_transactions(user_id)
         if not user_txs:
             print("No transactions found.")
@@ -110,6 +125,7 @@ class TransactionManager:
 
     # ----------- Add transaction loop ------------
     def add_transactions_loop(self, user_id: str):
+        """Interactive loop to add multiple transactions until the user quits."""
         print("\n➕ Add Transactions (type 'q' to stop)\n")
 
         added_count = 0
@@ -143,6 +159,7 @@ class TransactionManager:
 
     #----------- edit transaction ----------------
     def edit_transaction(self, user_id: str):
+        """Interactively edit a single transaction chosen by ID."""
         user_txs = self.list_transactions(user_id)
         if not user_txs:
             print("\n(ℹ️) Nothing to edit for this user.\n")
@@ -208,6 +225,7 @@ class TransactionManager:
     # ------------- Delete transaction --------------
 
     def delete_transaction_interactive(self, user_id: str):
+        """Interactively delete a transaction after confirmation."""
         user_txs = self.list_transactions(user_id)
         if not user_txs:
             print("No transactions found.")
@@ -232,6 +250,8 @@ class TransactionManager:
 
     # ----------- AF: Recurring transaction ------------
     def recurring_transaction(self, user_id: str):
+        """Create one or many future-dated recurring transactions (monthly/yearly).
+        Each occurrence is saved as a normal transaction entry."""
         print("\n🔁 Add RECURRING (one or many occurrences)")
 
         #validate input
@@ -325,14 +345,10 @@ class TransactionManager:
         print(f"✔️ Done. Created {created} occurrence(s).\n")
 
 
-    #--------------- saving goals ----------------
+    #---------------------------------- AF: saving goals -------------------------------------------
     def savings_goal(self, user_id: str):
-        """
-        Create/refresh a simple savings goal and show progress.
-        - All transactions where category == "savings" and type == "expense"
-          are counted as contributions toward the goal.
-        - If DataManager has load_goals/save_goals, the goal is persisted/updated.
-        """
+        """Create or update a simple savings goal and show progress.
+        Counts 'savings' category expenses as contributions."""
         print("\n🏆 Savings Goal")
 
         # 1) Ask user for goal details
@@ -390,10 +406,140 @@ class TransactionManager:
             print("🎉 Congrats! You've reached (or exceeded) your savings goal.")
         print()
 
+    def contribute_to_saving_goal(self, user_id: str):
+        """Record a contribution to a specific goal as an expense.
+        Uses category format 'Savings:<GoalName>' for tracking."""
+        print("\n➕ Contribute to Saving Goal")
+
+        # Load goals list if available
+        goals = []
+        try:
+            if hasattr(self.data_manager, "load_goals"):
+                goals = self.data_manager.load_goals() or []
+        except Exception:
+            goals = []
+
+        goal_names = [str(g.get("name", "")).strip() for g in goals if str(g.get("name", "")).strip()]
+        selected_name = None
+
+        if goal_names:
+            print("Choose a goal:")
+            for idx, name in enumerate(goal_names, 1):
+                print(f"{idx}. {name}")
+            print(f"{len(goal_names)+1}. Create a new goal")
+            choice = input("Select number: ").strip()
+            try:
+                c = int(choice)
+                if 1 <= c <= len(goal_names):
+                    selected_name = goal_names[c-1]
+                elif c == len(goal_names)+1:
+                    selected_name = input("New goal name: ").strip() or "Savings Goal"
+                else:
+                    selected_name = input("Goal name: ").strip() or "Savings Goal"
+            except ValueError:
+                selected_name = input("Goal name: ").strip() or "Savings Goal"
+        else:
+            print("No goals found. Let's create one quickly.")
+            selected_name = input("Goal name: ").strip() or "Savings Goal"
+
+        amount = input_positive_float("Amount to contribute: ")
+        description = input("Description (optional): ").strip()
+        payment_method = input_non_empty("Payment Method: ")
+        in_date = input(f"Date (dd/mm/YYYY) [Enter for {today_str()}]: ").strip()
+        date = in_date if in_date else today_str()
+
+        # Save as a normal EXPENSE transaction tagged with the goal
+        t = self.add_transaction(
+            user_id=user_id,
+            t_type="expense",
+            amount=str(amount),
+            category=f"Savings:{selected_name}",
+            date=date,
+            description=description or f"Contribution to '{selected_name}'",
+            payment_method=payment_method
+        )
+        print(f"✅ Contributed {amount} to '{selected_name}' as TXN {t['transaction_id']} on {date}.\n")
+
+    def view_saving_goals_progress(self, user_id: str):
+        """Display per-goal progress by summing 'Savings:<GoalName>' expenses.
+        Also shows unassigned 'savings' expenses."""
+        print("\n🏁 Savings Goals Progress")
+        # Load goals if available
+        goals = []
+        try:
+            if hasattr(self.data_manager, "load_goals"):
+                goals = self.data_manager.load_goals() or []
+        except Exception:
+            goals = []
+
+        # Build a name -> target map (fallback target 0 if not set)
+        goal_targets = {}
+        for g in goals:
+            name = str(g.get("name", "")).strip() or "Savings Goal"
+            try:
+                goal_targets[name] = decimal(str(g.get("target", "0")))
+            except Exception:
+                goal_targets[name] = decimal("0")
+
+        # Aggregate contributions per goal
+        per_goal_saved = {}
+        unassigned = decimal("0")
+        for t in self.transactions:
+            if t.get("user_id") != user_id:
+                continue
+            cat = str(t.get("category", "")).strip()
+            ttype = str(t.get("type", "")).strip().lower()
+            if ttype != "expense":
+                continue
+
+            if cat.lower().startswith("savings:"):
+                name = cat.split(":", 1)[1].strip() or "Savings Goal"
+                try:
+                    per_goal_saved[name] = per_goal_saved.get(name, decimal("0")) + decimal(str(t.get("amount", 0)))
+                except Exception:
+                    pass
+            elif cat.lower() == "savings":
+                try:
+                    unassigned += decimal(str(t.get("amount", 0)))
+                except Exception:
+                    pass
+
+        if not per_goal_saved and unassigned == decimal("0"):
+            print("No savings contributions found.\n")
+            return
+
+        print("-" * 60)
+        # Print each goal with target if known; if unknown, target shown as 0
+        if goal_targets:
+            for name, target in goal_targets.items():
+                saved = per_goal_saved.get(name, decimal("0"))
+                remaining = target - saved
+                if remaining < 0:
+                    remaining = decimal("0")
+                pct = decimal("0")
+                if target > 0:
+                    try:
+                        pct = (saved / target) * decimal("100")
+                    except Exception:
+                        pct = decimal("0")
+                print(f"• {name}")
+                print(f"  Target:     {target}")
+                print(f"  Saved:      {saved}")
+                print(f"  Remaining:  {remaining}")
+                print(f"  Progress:   {pct:.2f}%")
+                print("-" * 60)
+        else:
+            # No stored goals; just show what we discovered from contributions
+            for name, saved in per_goal_saved.items():
+                print(f"• {name}")
+                print(f"  Saved:      {saved}")
+                print("-" * 60)
+
+        if unassigned > 0:
+            print(f"Unassigned 'savings' contributions (no goal): {unassigned}\n")
+
     def export_transactions_interactive(self, user_id: str):
-        """
-        Ask the user where to save the CSV and export all transactions for this user.
-        """
+        """Prompt for a file path and export the user's transactions to CSV."""
         print("\n💾 Export Transactions to CSV")
         path = input("Enter filename (e.g., data/exports/my_transactions.csv): ").strip()
         if not path:
@@ -404,9 +550,7 @@ class TransactionManager:
         print(f"✅ Exported {len(tx_list)} transactions to {path}\n")
 
     def import_transactions_interactive(self, user_id: str):
-        """
-        Ask for a CSV file path and import its transactions into the system.
-        """
+        """Prompt for a CSV path and import transactions, skipping duplicates."""
         print("\n📥 Import Transactions from CSV")
         path = input("Enter CSV file path to import: ").strip()
         if not path:
@@ -418,6 +562,7 @@ class TransactionManager:
     #-------------------------Transactions menu----------------------------
 
     def menu(self, user_id: str):
+        """Interactive transactions menu for creating, viewing, and managing entries."""
         while True:
             print("\n=== 💼 TRANSACTIONS MENU ===")
             print("1. ➕ Add Transaction")
@@ -426,9 +571,11 @@ class TransactionManager:
             print("4. 🗑️ Delete Transaction")
             print("5. 🔁 Add Recurring Transaction")
             print("6. 🏆 Savings Goal")
-            print("7. 💾 Export to csv")
-            print("8. 📥 Import from csv")
-            print("9. 🔙 Back")
+            print("7. ➕ Contribute to Saving Goal")
+            print("8. 🏁 View Savings Goals Progress")
+            print("9. 💾 Export to csv")
+            print("10. 📥 Import from csv")
+            print("11. 🔙 Back")
 
             choice = input("Enter your choice: ").strip()
             if choice == "1":
@@ -444,10 +591,14 @@ class TransactionManager:
             elif choice == "6":
                 self.savings_goal(user_id)
             elif choice == "7":
-                self.export_transactions_interactive(user_id)
+                self.contribute_to_saving_goal(user_id)
             elif choice == "8":
-                self.import_transactions_interactive(user_id)
+                self.view_saving_goals_progress(user_id)
             elif choice == "9":
+                self.export_transactions_interactive(user_id)
+            elif choice == "10":
+                self.import_transactions_interactive(user_id)
+            elif choice == "11":
                 return
             else:
                 print("❌ Invalid choice.")

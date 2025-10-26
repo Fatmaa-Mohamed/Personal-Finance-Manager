@@ -28,6 +28,7 @@ def pause():
 
 #transaction helpers
 def input_non_empty(prompt: str) -> str:
+    """Prompt until a non-empty string is entered and return it."""
     while True:
         text = input(prompt).strip()
         if text:
@@ -35,6 +36,7 @@ def input_non_empty(prompt: str) -> str:
         print("❌Please enter a non-empty string")
 
 def input_positive_float(prompt: str) -> decimal:
+    """Prompt until a positive decimal number is entered and return it."""
     while True:
         raw = input(prompt).strip()
         try:
@@ -47,21 +49,27 @@ def input_positive_float(prompt: str) -> decimal:
             print("❌Not a number. Try again.")
 
 def today_str() -> str:
+    """Return today's date as a formatted string (dd/mm/YYYY)."""
     return datetime.now().strftime("%d/%m/%Y")
 
 def today_date() -> date:
+    """Return today's date as a datetime.date object."""
     return date.today()
 
 def parse_date(date_str: str) -> date:
+    """Convert a dd/mm/YYYY string into a datetime.date object."""
     return datetime.strptime(date_str, "%d/%m/%Y").date()
 
 def format_date(d: date) -> str:
+    """Format a date object into dd/mm/YYYY string form."""
     return d.strftime("%d/%m/%Y")
 
 def clamp_day(year:int, month:int, day:int) -> int:
+    """Return the maximum valid day for the given month/year."""
     return calendar.monthrange(year, month)[1]
 
 def next_monthly_date(from_date: date, day: int) -> date:
+    """Compute the next monthly date from a reference date for a target day."""
     year, month = from_date.year, from_date.month
     last_day = calendar.monthrange(year, month)[1]
     d = min(day, last_day)
@@ -78,6 +86,7 @@ def next_monthly_date(from_date: date, day: int) -> date:
     return date(year, month, d)
 
 def next_yearly_date(from_date: date, day: int, month: int) -> date:
+    """Compute the next yearly date from a reference date for a target day and month."""
     year = from_date.year
     try:
         candidate = date(year, month, day)

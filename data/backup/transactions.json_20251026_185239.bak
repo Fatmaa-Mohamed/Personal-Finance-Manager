@@ -728,15 +728,5 @@
         "date": "24/04/2026",
         "description": "3",
         "payment_method": "cash"
-    },
-    {
-        "transaction_id": "TXN075",
-        "user_id": "db1b1d8c",
-        "type": "expense",
-        "amount": "250",
-        "category": "Savings:Emergency",
-        "date": "26/10/2025",
-        "description": "Contribution to 'Emergency'",
-        "payment_method": "bank"
     }
 ]

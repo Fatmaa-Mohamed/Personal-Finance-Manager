@@ -6,10 +6,12 @@ from decimal import Decimal as decimal
 
 class Reports:
     def __init__(self, data_manager: DataManager):
+        """Initialize the reports module with a DataManager used to read transactions."""
         self.data_manager = data_manager
         #initializing our data manager
     # ----------------- dashboard summary ----------------
     def show_dashboard_summary(self, user_id: str):
+        """Print overall income, expense, and balance summary for the user."""
         print("=== 📊 DASHBOARD SUMMARY ===")
         # txns = transactions
         txns = self.data_manager.get_transactions(user_id)
@@ -24,6 +26,7 @@ class Reports:
 
     # ---------------- Monthly report -----------------
     def show_monthly_report(self, user_id: str, year:int, month: int):
+        """Show income, expense, and net totals for the specified month and user."""
         print(f"=== 📅 REPORT for {year}-{month:02d} ===")
 
         txns = self.data_manager.get_transactions(user_id)
@@ -49,6 +52,7 @@ class Reports:
     #-------------- Category BreakDown ------------
 
     def show_category_breakdown(self, user_id: str):
+        """Display income and expense totals grouped by category for the user."""
         print("=== 📂 CATEGORY BREAKDOWN ===")
 
         txns = self.data_manager.get_transactions(user_id)
@@ -71,6 +75,7 @@ class Reports:
 
     # -------------- Spending trends --------------
     def show_spending_trends(self, user_id: str):
+        """Print total expenses per month to visualize spending trends over time."""
         print("=== 📈 SPENDING TRENDS ===")
 
         txns = self.data_manager.get_transactions(user_id)
@@ -117,6 +122,7 @@ class Reports:
 
     # ---------------- Filter by Category ----------------
     def filter_by_category(self, user_id: str):
+        """Filter and display transactions that exactly match a given category name."""
         txns = self.data_manager.get_transactions(user_id)
         category = input("Enter category name: ").lower()
         results = [t for t in txns if t['category'].lower() == category]
@@ -124,6 +130,7 @@ class Reports:
 
     # ---------------- Filter by Date Range ----------------
     def filter_by_date_range(self, user_id: str):
+        """Filter transactions between two dates (inclusive) entered by the user."""
         txns = self.data_manager.get_transactions(user_id)
         start = input("Start date (DD/MM/YYYY): ")
         end = input("End date (DD/MM/YYYY): ")
@@ -145,6 +152,7 @@ class Reports:
 
     # ---------------- Filter by Amount Range ----------------
     def filter_by_amount_range(self, user_id: str):
+        """Filter transactions whose amounts fall within a user-provided range."""
         txns = self.data_manager.get_transactions(user_id)
         try:
             min_amt = decimal(input("Minimum amount: "))
@@ -159,6 +167,7 @@ class Reports:
 
     # ---------------- Sort Transactions ----------------
     def sort_transactions(self, user_id: str):
+        """Sort and display transactions by date or amount in ascending/descending order."""
         txns = self.data_manager.get_transactions(user_id)
 
         print("\nSort by:")
@@ -185,6 +194,7 @@ class Reports:
 
     # ---------------- Helper to Display Results ----------------
     def display_results(self, results):
+        """Helper to print a simple table of transactions or a 'no results' message."""
         if not results:
             print("No matching transactions found.")
         else:
@@ -296,6 +306,7 @@ class Reports:
     # -----------------Submenu for reports------------------------
 
     def menu(self, user_id: str):
+        """Interactive reports menu for summaries, trends, filters, and ASCII charts."""
         while True:
             # clear_screen()
             print("\n=== 📊 REPORTS MENU ===")

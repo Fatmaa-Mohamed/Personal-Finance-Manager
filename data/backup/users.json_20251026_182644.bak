@@ -1,0 +1,14 @@
+{
+    "db1b1d8c": {
+        "user_id": "db1b1d8c",
+        "name": "Eman",
+        "password": "4870e24314297a813e68457a155b9c5067e10038ee2874b516d2ae9cfc57b583",
+        "currency": "USD"
+    },
+    "59125d8d": {
+        "user_id": "59125d8d",
+        "name": "Fatma",
+        "password": "2e1f30509f1804afbb99a8884fc4501e4a4edb6a6572b0dd7d60ac60edd60970",
+        "currency": "USD"
+    }
+}

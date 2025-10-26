@@ -6,6 +6,7 @@ class UserManager:
     """Manages users: create, login, profiles, switching, logout."""
 
     def __init__(self, data_manager):
+        """Initialize the user manager and load users from storage via data_manager."""
         self.data_manager = data_manager
         self.users = data_manager.load_users()  # uses load_users from data_manager to read users from users.json as dict {user_id: user_data}
         self.current_user = None
@@ -14,6 +15,7 @@ class UserManager:
     # Private Helper Method
     # -----------------------------
     def _find_user_by_name(self, name): # Used to handle login, create, and switch user flows
+        """Return the user dict matching a case-insensitive name, or None if not found."""
         for user in self.users.values():
             if user['name'].lower() == name.lower():
                 return user
@@ -23,6 +25,7 @@ class UserManager:
     # CREATE USER
     # -----------------------------
     def create_user(self):
+        """Interactively create a new user with a strong password and default currency."""
         print("\n🆕 Create New User")
         name = input("Enter name (must be unique): ").strip()
         if not name:
@@ -60,6 +63,7 @@ class UserManager:
     # LOGIN USER
     # -----------------------------
     def login_user(self):
+        """Authenticate by name and password; sets current_user on success and returns it."""
         print("\n🔓 Login")
         if not self.users: # This is a safety check in case there are no users at all.
             print("❌ No users found. Create one first!")
@@ -70,14 +74,14 @@ class UserManager:
         if not user:
             print("❌ No account found with that name.")
             return None
-        
+
         while True: # Loop until correct password is entered
             password = getpass.getpass("Enter password (or 'q' to quit): ").strip()
             # Allow exit
             if password.lower() in ('q', 'quit'):
                 print("↩️ Returning to main menu...")
                 return None
-            
+
             if user['password'] == hash_password(password):
                 self.current_user = user
                 print(f"✅ Welcome back, {user['name']}!")
@@ -89,6 +93,7 @@ class UserManager:
     # VIEW PROFILE
     # -----------------------------
     def view_profile(self):
+        """Print the currently logged-in user's profile details."""
         if not self.current_user: # Again a safety check to prevent system crashing
             print("❌ Please login first!")
             return
@@ -104,10 +109,11 @@ class UserManager:
     # CHANGE PASSWORD
     # -----------------------------
     def change_password(self):
+        """Securely change the current user's password after verifying the old one."""
         if not self.current_user: # Again prevents errors if no one is logged in.
             print("❌ Please login first!")
             return
-        
+
         print("\n🔑 Change Password")
         # Keep asking for the old password until it's correct
         while True:
@@ -116,7 +122,7 @@ class UserManager:
             if old_pass.lower() in ('q', 'quit'):
                 print("↩️ Returning to user menu...")
                 return None
-            
+
             if self.current_user['password'] == hash_password(old_pass):
                 break
             print("❌ Incorrect old password! Please try again.")
@@ -140,6 +146,7 @@ class UserManager:
     # SWITCH USER
     # -----------------------------
     def switch_user(self):
+        """Switch to another existing user after password verification; updates current_user."""
         print("\n🔄 Switch User")
         if not self.users:
             print("❌ No users available.")
