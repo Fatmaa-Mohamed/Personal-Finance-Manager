@@ -1,0 +1,22 @@
+[
+    {
+        "transaction_id": "TXN001",
+        "user_id": "0f765791",
+        "type": "income",
+        "amount": "1000.0",
+        "category": "bonus",
+        "date": "26/10/2025",
+        "description": "binus",
+        "payment_method": "visa"
+    },
+    {
+        "transaction_id": "TXN002",
+        "user_id": "0f765791",
+        "type": "expense",
+        "amount": "100.0",
+        "category": "savings",
+        "date": "26/10/2025",
+        "description": "savings",
+        "payment_method": "cash"
+    }
+]

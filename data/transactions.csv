@@ -1,6 +1,1 @@
 transaction_id,user_id,type,amount,category,date,description,payment_method
-TXN002,db1b1d8c,income,1000,salary,25/10/2025,salary,visa
-TXN003,db1b1d8c,expense,10,transportation,25/10/2025,transportation,cash
-TXN004,db1b1d8c,income,50,Transport,25/10/2025,Transport,visa
-TXN005,db1b1d8c,expense,20,food,25/10/2025,launch,cash
-TXN006,db1b1d8c,expense,50,entertainment,26/10/2025,entertainment,cash

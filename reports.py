@@ -1,15 +1,17 @@
-from datetime import datetime
+from datetime import datetime, date
 from collections import defaultdict
-from utils import pause
+from utils import pause, parse_date
 from data_manager import DataManager
 from decimal import Decimal as decimal
 
 class Reports:
     def __init__(self, data_manager: DataManager):
+        """Initialize the reports module with a DataManager used to read transactions."""
         self.data_manager = data_manager
         #initializing our data manager
     # ----------------- dashboard summary ----------------
     def show_dashboard_summary(self, user_id: str):
+        """Print overall income, expense, and balance summary for the user."""
         print("=== 📊 DASHBOARD SUMMARY ===")
         # txns = transactions
         txns = self.data_manager.get_transactions(user_id)
@@ -24,6 +26,7 @@ class Reports:
 
     # ---------------- Monthly report -----------------
     def show_monthly_report(self, user_id: str, year:int, month: int):
+        """Show income, expense, and net totals for the specified month and user."""
         print(f"=== 📅 REPORT for {year}-{month:02d} ===")
 
         txns = self.data_manager.get_transactions(user_id)
@@ -49,6 +52,7 @@ class Reports:
     #-------------- Category BreakDown ------------
 
     def show_category_breakdown(self, user_id: str):
+        """Display income and expense totals grouped by category for the user."""
         print("=== 📂 CATEGORY BREAKDOWN ===")
 
         txns = self.data_manager.get_transactions(user_id)
@@ -59,11 +63,11 @@ class Reports:
                 categories[t['category']]['income'] += t['amount']
             elif t['type'] == 'expense':
                 categories[t['category']]['expense'] += t['amount']
-            
+
         if not categories:
             print("No transactions found!")
             return
-        
+
         print(f"{'Category':<20} | {'Income':>10} | {'Expense':>10}")
         print("-" * 45)
         for category, totals in categories.items():
@@ -71,6 +75,7 @@ class Reports:
 
     # -------------- Spending trends --------------
     def show_spending_trends(self, user_id: str):
+        """Print total expenses per month to visualize spending trends over time."""
         print("=== 📈 SPENDING TRENDS ===")
 
         txns = self.data_manager.get_transactions(user_id)
@@ -93,7 +98,7 @@ class Reports:
     def search_and_filter_menu(self, user_id: str):
         """Interactive menu for searching, filtering, and sorting transactions."""
         while True:
-            print("=== 🔍 SEARCH & FILTER MENU ===")
+            print("\n=== 🔍 SEARCH & FILTER MENU ===")
             print("1.  🏷️ Filter by Category")
             print("2.  📆 Filter by Date Range")
             print("3.  💵 Filter by Amount Range")
@@ -117,6 +122,7 @@ class Reports:
 
     # ---------------- Filter by Category ----------------
     def filter_by_category(self, user_id: str):
+        """Filter and display transactions that exactly match a given category name."""
         txns = self.data_manager.get_transactions(user_id)
         category = input("Enter category name: ").lower()
         results = [t for t in txns if t['category'].lower() == category]
@@ -124,6 +130,7 @@ class Reports:
 
     # ---------------- Filter by Date Range ----------------
     def filter_by_date_range(self, user_id: str):
+        """Filter transactions between two dates (inclusive) entered by the user."""
         txns = self.data_manager.get_transactions(user_id)
         start = input("Start date (DD/MM/YYYY): ")
         end = input("End date (DD/MM/YYYY): ")
@@ -145,6 +152,7 @@ class Reports:
 
     # ---------------- Filter by Amount Range ----------------
     def filter_by_amount_range(self, user_id: str):
+        """Filter transactions whose amounts fall within a user-provided range."""
         txns = self.data_manager.get_transactions(user_id)
         try:
             min_amt = decimal(input("Minimum amount: "))
@@ -159,9 +167,10 @@ class Reports:
 
     # ---------------- Sort Transactions ----------------
     def sort_transactions(self, user_id: str):
+        """Sort and display transactions by date or amount in ascending/descending order."""
         txns = self.data_manager.get_transactions(user_id)
 
-        print("Sort by:")
+        print("\nSort by:")
         print("1. Date (newest first)")
         print("2. Date (oldest first)")
         print("3. Amount (high to low)")
@@ -185,6 +194,7 @@ class Reports:
 
     # ---------------- Helper to Display Results ----------------
     def display_results(self, results):
+        """Helper to print a simple table of transactions or a 'no results' message."""
         if not results:
             print("No matching transactions found.")
         else:
@@ -194,25 +204,125 @@ class Reports:
             for t in results:
                 print(f"{t['date']:<12} | {t['type']:<12} | {t['category']:<15} | {t['amount']:<12} | {t['description']:<15}")
         pause()
-    
-    #-----------------Submenu for reports------------------------
+
+
+    #----------------Advanced features ASCII visualizations ----------------
+
+    def ascii_category_bars(self, user_id: str):
+        """
+        ASCII bar chart by expense category.
+        Uses all transactions for the user.
+        """
+
+        # Group totals by category (only expenses)
+        sums = defaultdict(float)
+        for t in self.data_manager.get_transactions(user_id):
+            if t.get("type") == "expense":
+                cat = t.get("category", "Uncategorized")
+                try:
+                    amt = float(t.get("amount", 0))
+                    sums[cat] += amt
+                except ValueError:
+                    continue
+
+        if not sums:
+            print("\nNo expenses found to visualize.\n")
+            return
+
+        # Scale bars
+        max_val = max(sums.values())
+        scale = max_val / 40 if max_val > 0 else 1  # 40 chars wide max
+
+        print("\n📊 Expense Breakdown by Category (ASCII)")
+        print("-" * 50)
+        for cat, total in sorted(sums.items(), key=lambda x: -x[1]):
+            bar_len = int(total / scale)
+            bar = "#" * bar_len
+            print(f"{cat:<15} | {bar} {total:.2f}")
+        print("-" * 50)
+
+    def ascii_last_12_months_vertical(self, user_id: str):
+        """
+        Vertical ASCII chart of total expenses over the last 12 months.
+        Each column = one month. The higher the column, the higher the expense.
+        """
+        from datetime import date
+        from collections import defaultdict
+        import calendar
+        from utils import parse_date
+
+        txs = self.data_manager.get_transactions(user_id)
+        if not txs:
+            print("\nNo transactions found.\n")
+            return
+
+        today = date.today()
+        year, month = today.year, today.month
+        totals = defaultdict(float)
+
+        # 1️⃣ Aggregate totals per (year, month)
+        for t in txs:
+            if t.get("type") != "expense":
+                continue
+            d = parse_date(str(t.get("date", "")))
+            key = (d.year, d.month)
+            totals[key] += float(t.get("amount", 0) or 0)
+
+        # 2️⃣ Build list of last 12 months
+        months = []
+        for i in range(12):
+            m = month - i
+            y = year
+            if m <= 0:
+                m += 12
+                y -= 1
+            months.append((y, m))
+        months.reverse()
+
+        # 3️⃣ Prepare data
+        vals = [totals.get(k, 0.0) for k in months]
+        max_val = max(vals) if vals else 1
+        scale = max_val / 10 if max_val > 0 else 1  # max 10 rows high
+
+        # 4️⃣ Build 2D grid (10 rows × 12 months)
+        grid = []
+        for level in range(10, 0, -1):
+            row = ""
+            threshold = level * scale
+            for v in vals:
+                row += " █ " if v >= threshold else "   "
+            grid.append(row)
+
+        # 5️⃣ Print chart
+        print("\n📊 Expense Trend - Last 12 Months (Vertical ASCII)")
+        print("-" * 50)
+        for r in grid:
+            print(r)
+        print("-" * 50)
+        print("".join([f"{calendar.month_abbr[m][0:3]:^3}" for (_, m) in months]))
+        print("".join([f"{v:>3.0f}" for v in vals]))
+        print("-" * 50)
+
+    # -----------------Submenu for reports------------------------
 
     def menu(self, user_id: str):
+        """Interactive reports menu for summaries, trends, filters, and ASCII charts."""
         while True:
             # clear_screen()
-            print("=== 📊 REPORTS MENU ===")
+            print("\n=== 📊 REPORTS MENU ===")
             print("1. 🧮 Dashboard Summary")
             print("2. 🗓️ Monthly Report")
             print("3. 📂 Category Breakdown")
             print("4. 📈 Spending Trends")
             print("5. 🔍 Search & Filter")
-            print("6. 🔙 Back")
+            print("6. 📊 Ascii Category Bars")
+            print("7. 📉 Ascii Last 12 Months Vertical")
+            print("8. 🔙 Back")
+            choice = input("👉 Choose an option (1–8): ").strip()
 
-            choice = input("👉 Choose an option (1–6): ").strip()
-            
             if choice == "1":
                 self.show_dashboard_summary(user_id)
-            
+
             elif choice == "2":
                 try:
                     year = int(input("Enter year (YYYY): "))
@@ -220,19 +330,26 @@ class Reports:
                     self.show_monthly_report(user_id, year, month)
                 except ValueError:
                     print("❌ Invalid input. Please enter valid numbers for year and month.")
-            
+
             elif choice == "3":
                 self.show_category_breakdown(user_id)
-            
+
             elif choice == "4":
                 self.show_spending_trends(user_id)
-            
+
             elif choice == "5":
                 self.search_and_filter_menu(user_id)
-            
+
             elif choice == "6":
+                self.ascii_category_bars(user_id)
+
+            elif choice == "7":
+                self.ascii_last_12_months_vertical(user_id)
+
+            elif choice == "8":
                 print("↩️ Returning to user menu...")
                 return
-            
+
             else:
-                print("❌ Invalid choice! Please select 1–5.")
+                print("❌ Invalid choice! Please select 1–8.")
+            pause()
