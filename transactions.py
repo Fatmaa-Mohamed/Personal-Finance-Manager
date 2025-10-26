@@ -347,16 +347,19 @@ class TransactionManager:
 
     #---------------------------------- AF: saving goals -------------------------------------------
     def savings_goal(self, user_id: str):
-        """Create or update a simple savings goal and show progress.
-        Counts 'savings' category expenses as contributions."""
-        print("\n🏆 Savings Goal")
+        """
+        Create/refresh a simple savings goal and show progress.
+        - All transactions where category == "savings" and type == "expense"
+          are counted as contributions toward the goal.
+        """
+        print("\n🏆 Savings Goal (quick)")
 
         # 1) Ask user for goal details
         name = input("Goal name (e.g., 'Emergency Fund') [Enter for 'Savings Goal'] : ").strip() or "Savings Goal"
         target = input_positive_float("Target amount: ")
 
         # 2) Compute progress from existing transactions
-        total_saved = decimal("0")
+        total_saved = 0.0
         for t in self.transactions:
             if t.get("user_id") != user_id:
                 continue
@@ -364,12 +367,12 @@ class TransactionManager:
             if (str(t.get("category", "")).strip().lower() == "savings"
                     and str(t.get("type", "")).strip().lower() == "expense"):
                 try:
-                    total_saved += decimal(t.get("amount", 0) or 0)
+                    total_saved += float(t.get("amount", 0) or 0)
                 except Exception:
                     pass
 
-        remaining = max(decimal("0"), decimal(target) - total_saved)
-        pct = decimal("0") if decimal(target) <= decimal("0") else min(decimal("100"), (total_saved / decimal(target)) * decimal("100"))
+        remaining = max(0.0, float(target) - total_saved)
+        pct = 0.0 if float(target) <= 0 else min(100.0, (total_saved / float(target)) * 100.0)
 
         # 3) Try to persist in goals.json if DataManager supports it (optional)
         try:
@@ -380,15 +383,15 @@ class TransactionManager:
                 for g in goals:
                     if str(g.get("name", "")).strip().lower() == name.strip().lower():
                         g["name"] = name
-                        g["target"] = str(target)
-                        g["saved_snapshot"] = str(total_saved)  # snapshot at this check
+                        g["target"] = float(target)
+                        g["saved_snapshot"] = total_saved  # snapshot at this check
                         updated = True
                         break
                 if not updated:
                     goals.append({
                         "name": name,
-                        "target": str(target),
-                        "saved_snapshot": str(total_saved)
+                        "target": float(target),
+                        "saved_snapshot": total_saved
                     })
                 self.data_manager.save_goals(goals)
         except Exception:
@@ -398,145 +401,13 @@ class TransactionManager:
         # 4) Display summary
         print("\n=== Savings Goal Summary ===")
         print(f"Goal:       {name}")
-        print(f"Target:     {decimal(target)}")
-        print(f"Saved (via 'savings' expenses): {total_saved}")
-        print(f"Remaining:  {remaining}")
-        print(f"Progress:   {pct}%")
+        print(f"Target:     {float(target):.2f}")
+        print(f"Saved (via 'savings' expenses): {total_saved:.2f}")
+        print(f"Remaining:  {remaining:.2f}")
+        print(f"Progress:   {pct:5.1f}%")
         if remaining <= 0:
             print("🎉 Congrats! You've reached (or exceeded) your savings goal.")
         print()
-
-    def contribute_to_saving_goal(self, user_id: str):
-        """Record a contribution to a specific goal as an expense.
-        Uses category format 'Savings:<GoalName>' for tracking."""
-        print("\n➕ Contribute to Saving Goal")
-
-        # Load goals list if available
-        goals = []
-        try:
-            if hasattr(self.data_manager, "load_goals"):
-                goals = self.data_manager.load_goals() or []
-        except Exception:
-            goals = []
-
-        goal_names = [str(g.get("name", "")).strip() for g in goals if str(g.get("name", "")).strip()]
-        selected_name = None
-
-        if goal_names:
-            print("Choose a goal:")
-            for idx, name in enumerate(goal_names, 1):
-                print(f"{idx}. {name}")
-            print(f"{len(goal_names)+1}. Create a new goal")
-            choice = input("Select number: ").strip()
-            try:
-                c = int(choice)
-                if 1 <= c <= len(goal_names):
-                    selected_name = goal_names[c-1]
-                elif c == len(goal_names)+1:
-                    selected_name = input("New goal name: ").strip() or "Savings Goal"
-                else:
-                    selected_name = input("Goal name: ").strip() or "Savings Goal"
-            except ValueError:
-                selected_name = input("Goal name: ").strip() or "Savings Goal"
-        else:
-            print("No goals found. Let's create one quickly.")
-            selected_name = input("Goal name: ").strip() or "Savings Goal"
-
-        amount = input_positive_float("Amount to contribute: ")
-        description = input("Description (optional): ").strip()
-        payment_method = input_non_empty("Payment Method: ")
-        in_date = input(f"Date (dd/mm/YYYY) [Enter for {today_str()}]: ").strip()
-        date = in_date if in_date else today_str()
-
-        # Save as a normal EXPENSE transaction tagged with the goal
-        t = self.add_transaction(
-            user_id=user_id,
-            t_type="expense",
-            amount=str(amount),
-            category=f"Savings:{selected_name}",
-            date=date,
-            description=description or f"Contribution to '{selected_name}'",
-            payment_method=payment_method
-        )
-        print(f"✅ Contributed {amount} to '{selected_name}' as TXN {t['transaction_id']} on {date}.\n")
-
-    def view_saving_goals_progress(self, user_id: str):
-        """Display per-goal progress by summing 'Savings:<GoalName>' expenses.
-        Also shows unassigned 'savings' expenses."""
-        print("\n🏁 Savings Goals Progress")
-        # Load goals if available
-        goals = []
-        try:
-            if hasattr(self.data_manager, "load_goals"):
-                goals = self.data_manager.load_goals() or []
-        except Exception:
-            goals = []
-
-        # Build a name -> target map (fallback target 0 if not set)
-        goal_targets = {}
-        for g in goals:
-            name = str(g.get("name", "")).strip() or "Savings Goal"
-            try:
-                goal_targets[name] = decimal(str(g.get("target", "0")))
-            except Exception:
-                goal_targets[name] = decimal("0")
-
-        # Aggregate contributions per goal
-        per_goal_saved = {}
-        unassigned = decimal("0")
-        for t in self.transactions:
-            if t.get("user_id") != user_id:
-                continue
-            cat = str(t.get("category", "")).strip()
-            ttype = str(t.get("type", "")).strip().lower()
-            if ttype != "expense":
-                continue
-
-            if cat.lower().startswith("savings:"):
-                name = cat.split(":", 1)[1].strip() or "Savings Goal"
-                try:
-                    per_goal_saved[name] = per_goal_saved.get(name, decimal("0")) + decimal(str(t.get("amount", 0)))
-                except Exception:
-                    pass
-            elif cat.lower() == "savings":
-                try:
-                    unassigned += decimal(str(t.get("amount", 0)))
-                except Exception:
-                    pass
-
-        if not per_goal_saved and unassigned == decimal("0"):
-            print("No savings contributions found.\n")
-            return
-
-        print("-" * 60)
-        # Print each goal with target if known; if unknown, target shown as 0
-        if goal_targets:
-            for name, target in goal_targets.items():
-                saved = per_goal_saved.get(name, decimal("0"))
-                remaining = target - saved
-                if remaining < 0:
-                    remaining = decimal("0")
-                pct = decimal("0")
-                if target > 0:
-                    try:
-                        pct = (saved / target) * decimal("100")
-                    except Exception:
-                        pct = decimal("0")
-                print(f"• {name}")
-                print(f"  Target:     {target}")
-                print(f"  Saved:      {saved}")
-                print(f"  Remaining:  {remaining}")
-                print(f"  Progress:   {pct:.2f}%")
-                print("-" * 60)
-        else:
-            # No stored goals; just show what we discovered from contributions
-            for name, saved in per_goal_saved.items():
-                print(f"• {name}")
-                print(f"  Saved:      {saved}")
-                print("-" * 60)
-
-        if unassigned > 0:
-            print(f"Unassigned 'savings' contributions (no goal): {unassigned}\n")
 
     def export_transactions_interactive(self, user_id: str):
         """Prompt for a file path and export the user's transactions to CSV."""
@@ -571,11 +442,9 @@ class TransactionManager:
             print("4. 🗑️ Delete Transaction")
             print("5. 🔁 Add Recurring Transaction")
             print("6. 🏆 Savings Goal")
-            print("7. ➕ Contribute to Saving Goal")
-            print("8. 🏁 View Savings Goals Progress")
-            print("9. 💾 Export to csv")
-            print("10. 📥 Import from csv")
-            print("11. 🔙 Back")
+            print("7. 💾 Export to csv")
+            print("8. 📥 Import from csv")
+            print("9. 🔙 Back")
 
             choice = input("Enter your choice: ").strip()
             if choice == "1":
@@ -591,14 +460,10 @@ class TransactionManager:
             elif choice == "6":
                 self.savings_goal(user_id)
             elif choice == "7":
-                self.contribute_to_saving_goal(user_id)
-            elif choice == "8":
-                self.view_saving_goals_progress(user_id)
-            elif choice == "9":
                 self.export_transactions_interactive(user_id)
-            elif choice == "10":
+            elif choice == "8":
                 self.import_transactions_interactive(user_id)
-            elif choice == "11":
+            elif choice == "9":
                 return
             else:
                 print("❌ Invalid choice.")
