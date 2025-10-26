@@ -61,14 +61,3 @@ TXN060,db1b1d8c,expense,30,fatora,25/05/2026,,cash
 TXN061,db1b1d8c,expense,30,fatora,25/06/2026,,cash
 TXN062,db1b1d8c,expense,30,fatora,25/07/2026,,cash
 TXN063,db1b1d8c,expense,40,bd,16/07/2026,,cash
-TXN064,db1b1d8c,income,5000,birthday,16/07/2026,,cash
-TXN065,db1b1d8c,income,5000,birthday,16/07/2027,,cash
-TXN066,db1b1d8c,income,5000,birthday,16/07/2028,,cash
-TXN067,db1b1d8c,income,5000,birthday,16/07/2029,,cash
-TXN068,db1b1d8c,income,5000,birthday,16/07/2030,,cash
-TXN069,db1b1d8c,income,24,bb,24/11/2025,3,cash
-TXN070,db1b1d8c,income,24,bb,24/12/2025,3,cash
-TXN071,db1b1d8c,income,24,bb,24/01/2026,3,cash
-TXN072,db1b1d8c,income,24,bb,24/02/2026,3,cash
-TXN073,db1b1d8c,income,24,bb,24/03/2026,3,cash
-TXN074,db1b1d8c,income,24,bb,24/04/2026,3,cash

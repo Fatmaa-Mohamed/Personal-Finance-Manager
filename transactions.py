@@ -1,5 +1,6 @@
 from utils import input_non_empty, input_positive_float, today_str, next_yearly_date, next_monthly_date, today_date, parse_date, format_date, pause
 from decimal import Decimal as decimal
+from datetime import timedelta
 class TransactionManager:
     def __init__(self, data_manager):
         self.data_manager = data_manager
@@ -272,22 +273,23 @@ class TransactionManager:
                     pass
                 print("Enter a number between 1 and 31.")
 
-        date_obj = next_monthly_date(today, day)
+            date_obj = next_monthly_date(today, day)
 
-        for _ in range(occ_count):
-            t = self.add_transaction(
-                user_id=user_id,
-                t_type=t_type,
-                amount=amount,
-                category=category,
-                description=description,
-                payment_method=payment_method,
-                date=format_date(date_obj),
-            )
-            print(f"✅ Saved {t_type} #{t['transaction_id']} on {format_date(date_obj)}")
-            created += 1
-            # Move to the next month
-            date_obj = next_monthly_date(date_obj.replace(day=1), day)
+            for _ in range(occ_count):
+                t = self.add_transaction(
+                    user_id=user_id,
+                    t_type=t_type,
+                    amount=amount,
+                    category=category,
+                    description=description,
+                    payment_method=payment_method,
+                    date=format_date(date_obj),
+                )
+                print(f"✅ Saved {t_type} #{t['transaction_id']} on {format_date(date_obj)}")
+                created += 1
+                # Move to the next month
+                first_of_next = (date_obj.replace(day=28) + timedelta(days=4)).replace(day=1)
+                date_obj = next_monthly_date(first_of_next, day)
 
         else: #yearly occurrence
             while True:
@@ -317,7 +319,8 @@ class TransactionManager:
                 print(f"✅ Saved {t_type} #{t['transaction_id']} on {format_date(date_obj)}")
                 created += 1
                 # Move to the next year
-                date_obj = next_yearly_date(date_obj, day, month)
+                first_of_next = (date_obj.replace(day=28) + timedelta(days=4)).replace(day=1)
+                date_obj = next_yearly_date(first_of_next, day, month)
 
         print(f"✔️ Done. Created {created} occurrence(s).\n")
 
