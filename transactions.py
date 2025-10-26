@@ -66,12 +66,19 @@ class TransactionManager:
 
             print("\n💰 Your Savings Goals:")
             for idx, g in enumerate(goals, start=1):
-                saved = float(g.get("saved_snapshot", 0))
-                target = float(g.get("target", 0))
-                remaining = max(0, target - saved)
-                progress = 0 if target == 0 else min(100, (saved / target) * 100)
+                try:
+                    saved_dec = decimal(str(g.get("saved", "0")))
+                except Exception:
+                    saved_dec = decimal("0")
+                try:
+                    target_dec = decimal(str(g.get("target", "0")))
+                except Exception:
+                    target_dec = decimal("0")
+                remaining = max(decimal("0"), target_dec - saved_dec)
+                progress = decimal("0") if target_dec <= 0 else min(decimal("100"), (saved_dec / target_dec) * decimal("100"))
                 print(
-                    f"{idx}. {g['name']} — Target: {target:.2f}, Saved: {saved:.2f}, Remaining: {remaining:.2f}, Progress: {progress:.1f}%")
+                    f"{idx}. {g['name']} — Target: {target_dec:.2f}, Saved: {saved_dec:.2f}, Remaining: {remaining:.2f}, Progress: {progress:.1f}%"
+                )
 
             # Choose goal
             while True:
@@ -81,21 +88,32 @@ class TransactionManager:
                     break
                 print("❌ Invalid choice. Try again.")
 
-            # 3️⃣ Update the goal
-            goal["saved_snapshot"] = float(goal.get("saved_snapshot", 0)) + float(amount)
-            target = float(goal["target"])
-            remaining = max(0.0, target - goal["saved_snapshot"])
-            progress = min(100.0, (goal["saved_snapshot"] / target) * 100.0)
+            # 3️⃣ Update the goal (only here, not by scanning past transactions)
+            try:
+                prev_saved = decimal(str(goal.get("saved", "0")))
+            except Exception:
+                prev_saved = decimal("0")
+            try:
+                amt = decimal(str(amount))
+            except Exception:
+                amt = decimal("0")
+
+            new_saved = prev_saved + amt
+            goal["saved"] = str(new_saved)
+
+            target_dec = decimal(str(goal.get("target", "0")))
+            remaining = max(decimal("0"), target_dec - new_saved)
+            progress = decimal("0") if target_dec <= 0 else min(decimal("100"), (new_saved / target_dec) * decimal("100"))
 
             print("\n=== Updated Goal Summary ===")
             print(f"Goal: {goal['name']}")
-            print(f"Target: {target:.2f}")
-            print(f"Saved: {goal['saved_snapshot']:.2f}")
+            print(f"Target: {target_dec:.2f}")
+            print(f"Saved: {new_saved:.2f}")
             print(f"Remaining: {remaining:.2f}")
             print(f"Progress: {progress:.1f}%")
 
             # 4️⃣ Remove goal if complete
-            if goal["saved_snapshot"] >= target:
+            if new_saved >= target_dec and target_dec > 0:
                 print(f"🎉 Goal '{goal['name']}' reached! It has been removed from active goals.")
                 goals.remove(goal)
 
@@ -402,65 +420,57 @@ class TransactionManager:
     def savings_goal(self, user_id: str):
         """
         Create or update a savings goal for a specific user.
-        Progress is calculated from 'savings' expenses.
-        Stores all numbers as strings in JSON, uses Decimal for calculations.
+        New goals always start with saved = "0".
+        Contributions happen ONLY via add_transaction() when category='savings'.
         """
         print("\n🏆 Savings Goal")
 
         # Ask user for goal info
         name = input("Goal name (e.g., 'Emergency Fund') [Enter for 'Savings Goal']: ").strip() or "Savings Goal"
         target_str = input("Target amount: ").strip() or "0"
-    
+
         try:
             target = decimal(target_str)
         except Exception:
             print("❌ Invalid number. Goal not created.")
             return
-    
+
         # Load existing goals for this user
         goals = self.data_manager.load_goals(user_id) or []
-    
-        # Calculate how much this user has saved so far
-        total_saved = decimal("0")
-        for t in self.transactions:
-            if (
-                t.get("user_id") == user_id
-                and str(t.get("type", "")).lower() == "expense"
-                and str(t.get("category", "")).lower() == "savings"
-            ):
-                try:
-                    total_saved += decimal(str(t.get("amount", "0")))
-                except Exception:
-                    pass
-    
+
+        # New goals start at 0; contributions are added only via add_transaction()
+        saved_now = decimal("0")
+
         # Check if goal already exists
         existing_goal = next((g for g in goals if g["name"].lower() == name.lower()), None)
         if existing_goal:
+            # Update target only; keep current saved as-is
             existing_goal["target"] = str(target)
-            existing_goal["saved"] = str(total_saved)
+            # Ensure the saved field exists
+            if "saved" not in existing_goal:
+                existing_goal["saved"] = "0"
+            saved_value = decimal(str(existing_goal.get("saved", "0")))
         else:
             goals.append({
                 "name": name,
                 "target": str(target),
-                "saved": str(total_saved)
+                "saved": str(saved_now)
             })
-    
-        # Save updated goals for this user
+            saved_value = saved_now
+
         self.data_manager.save_goals(user_id, goals)
-    
-        # Compute progress
-        remaining = max(decimal("0"), target - total_saved)
-        pct = decimal("0") if target <= 0 else min(decimal("100"), (total_saved / target) * decimal("100"))
-    
-        # Display summary
+
+        remaining = max(decimal("0"), target - saved_value)
+        pct = decimal("0") if target <= 0 else min(decimal("100"), (saved_value / target) * decimal("100"))
+
         print("\n=== Savings Goal Summary ===")
         print(f"Goal:       {name}")
         print(f"Target:     {target:.2f}")
-        print(f"Saved:      {total_saved:.2f}")
+        print(f"Saved:      {saved_value:.2f}")
         print(f"Remaining:  {remaining:.2f}")
         print(f"Progress:   {pct:.1f}%")
-    
-        if remaining <= 0:
+
+        if remaining <= 0 and target > 0:
             print("🎉 Congrats! You've reached your savings goal!")
         print()
 
