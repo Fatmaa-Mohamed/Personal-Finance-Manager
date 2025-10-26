@@ -35,10 +35,11 @@ class TransactionManager:
     # CRUD operations
    # -------------------- Create ----------------
     def add_transaction(self, user_id: str, t_type: str, amount: decimal, category: str,
-                        date:str, description:str ,payment_method: str) -> dict:
+                        date: str, description: str, payment_method: str) -> dict:
         """Create and persist a new transaction record for the given user.
-        Returns the created transaction dict."""
+        If category == 'savings', prompt to choose a goal and update its progress."""
 
+        # 1️⃣ Create transaction normally
         t = {
             "transaction_id": self._next_transaction_id(),
             "user_id": user_id,
@@ -51,8 +52,60 @@ class TransactionManager:
         }
         self.transactions.append(t)
         self._save()
-        return t
 
+        # 2️⃣ Handle savings goal contribution
+        if category.lower() == "savings" and t_type.lower() == "expense":
+            try:
+                goals = self.data_manager.load_goals(user_id) or []
+            except Exception:
+                goals = []
+
+            if not goals:
+                print("⚠️ You have no savings goals yet. Create one first.")
+                return t
+
+            print("\n💰 Your Savings Goals:")
+            for idx, g in enumerate(goals, start=1):
+                saved = float(g.get("saved_snapshot", 0))
+                target = float(g.get("target", 0))
+                remaining = max(0, target - saved)
+                progress = 0 if target == 0 else min(100, (saved / target) * 100)
+                print(
+                    f"{idx}. {g['name']} — Target: {target:.2f}, Saved: {saved:.2f}, Remaining: {remaining:.2f}, Progress: {progress:.1f}%")
+
+            # Choose goal
+            while True:
+                choice = input(f"\nSelect goal number (1-{len(goals)}): ").strip()
+                if choice.isdigit() and 1 <= int(choice) <= len(goals):
+                    goal = goals[int(choice) - 1]
+                    break
+                print("❌ Invalid choice. Try again.")
+
+            # 3️⃣ Update the goal
+            goal["saved_snapshot"] = float(goal.get("saved_snapshot", 0)) + float(amount)
+            target = float(goal["target"])
+            remaining = max(0.0, target - goal["saved_snapshot"])
+            progress = min(100.0, (goal["saved_snapshot"] / target) * 100.0)
+
+            print("\n=== Updated Goal Summary ===")
+            print(f"Goal: {goal['name']}")
+            print(f"Target: {target:.2f}")
+            print(f"Saved: {goal['saved_snapshot']:.2f}")
+            print(f"Remaining: {remaining:.2f}")
+            print(f"Progress: {progress:.1f}%")
+
+            # 4️⃣ Remove goal if complete
+            if goal["saved_snapshot"] >= target:
+                print(f"🎉 Goal '{goal['name']}' reached! It has been removed from active goals.")
+                goals.remove(goal)
+
+            # 5️⃣ Save goals
+            try:
+                self.data_manager.save_goals(user_id, goals)
+            except Exception as e:
+                print(f"⚠️ Could not save updated goals: {e}")
+
+        return t
     # ------------ Read -------------
     def list_transactions(self, user_id: str) -> list:
         """Return all transactions belonging to the given user_id as a list."""

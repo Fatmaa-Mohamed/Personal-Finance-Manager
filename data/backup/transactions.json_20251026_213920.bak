@@ -748,25 +748,5 @@
         "date": "26/10/2025",
         "description": "",
         "payment_method": "cash"
-    },
-    {
-        "transaction_id": "TXN077",
-        "user_id": "db1b1d8c",
-        "type": "expense",
-        "amount": "400.0",
-        "category": "savings",
-        "date": "26/10/2025",
-        "description": "",
-        "payment_method": "cash"
-    },
-    {
-        "transaction_id": "TXN078",
-        "user_id": "db1b1d8c",
-        "type": "expense",
-        "amount": "400.0",
-        "category": "savings",
-        "date": "26/10/2025",
-        "description": "",
-        "payment_method": "cash"
     }
 ]
