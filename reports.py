@@ -93,7 +93,7 @@ class Reports:
     def search_and_filter_menu(self, user_id: str):
         """Interactive menu for searching, filtering, and sorting transactions."""
         while True:
-            print("=== 🔍 SEARCH & FILTER MENU ===")
+            print("\n=== 🔍 SEARCH & FILTER MENU ===")
             print("1.  🏷️ Filter by Category")
             print("2.  📆 Filter by Date Range")
             print("3.  💵 Filter by Amount Range")
@@ -161,7 +161,7 @@ class Reports:
     def sort_transactions(self, user_id: str):
         txns = self.data_manager.get_transactions(user_id)
 
-        print("Sort by:")
+        print("\nSort by:")
         print("1. Date (newest first)")
         print("2. Date (oldest first)")
         print("3. Amount (high to low)")
@@ -195,6 +195,8 @@ class Reports:
                 print(f"{t['date']:<12} | {t['type']:<12} | {t['category']:<15} | {t['amount']:<12} | {t['description']:<15}")
         pause()
 
+
+    #----------------Advanced features ASCII visualizations ----------------
 
     def ascii_category_bars(self, user_id: str):
         """
@@ -291,19 +293,21 @@ class Reports:
         print("".join([f"{v:>3.0f}" for v in vals]))
         print("-" * 50)
 
-        # -----------------Submenu for reports------------------------
+    # -----------------Submenu for reports------------------------
 
     def menu(self, user_id: str):
         while True:
             # clear_screen()
-            print("=== 📊 REPORTS MENU ===")
+            print("\n=== 📊 REPORTS MENU ===")
             print("1. 🧮 Dashboard Summary")
             print("2. 🗓️ Monthly Report")
             print("3. 📂 Category Breakdown")
             print("4. 📈 Spending Trends")
             print("5. 🔍 Search & Filter")
-            print("6. 🔙 Back")
-            choice = input("👉 Choose an option (1–6): ").strip()
+            print("6. 📊 Ascii Category Bars")
+            print("7. 📉 Ascii Last 12 Months Vertical")
+            print("8. 🔙 Back")
+            choice = input("👉 Choose an option (1–8): ").strip()
 
             if choice == "1":
                 self.show_dashboard_summary(user_id)
@@ -326,8 +330,15 @@ class Reports:
                 self.search_and_filter_menu(user_id)
 
             elif choice == "6":
+                self.ascii_category_bars(user_id)
+
+            elif choice == "7":
+                self.ascii_last_12_months_vertical(user_id)
+
+            elif choice == "8":
                 print("↩️ Returning to user menu...")
                 return
 
             else:
-                print("❌ Invalid choice! Please select 1–5.")
+                print("❌ Invalid choice! Please select 1–8.")
+            pause()

@@ -196,12 +196,6 @@ class DataManager:
                 writer.writerow(row)
         self.transactions = self.load_transactions()
 
-        self.transactions = transactions
-
-        self._backup_file(self.transactions_file)
-        self._backup_file(self.transactions_csv)
-
-
     # --------- csv import/export ----------------
     def export_transactions_csv(self, user_id: str, tx_list: list, path: str):
         fieldnames = ["transaction_id", "user_id", "type", "amount", "category", "date", "description",
@@ -276,5 +270,3 @@ class DataManager:
         os.makedirs("data", exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
             json.dump(goals, f, ensure_ascii=False, indent=2)
-
-

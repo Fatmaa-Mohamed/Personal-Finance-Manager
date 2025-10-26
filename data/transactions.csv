@@ -4,3 +4,13 @@ TXN003,db1b1d8c,expense,10,transportation,25/10/2025,transportation,cash
 TXN004,db1b1d8c,income,50,Transport,25/10/2025,Transport,visa
 TXN005,db1b1d8c,expense,20,food,25/10/2025,launch,cash
 TXN006,db1b1d8c,expense,50,entertainment,26/10/2025,entertainment,cash
+TXN007,db1b1d8c,expense,5,coffee,26/10/2025,drink,cash
+TXN008,db1b1d8c,expense,10,transport,27/10/2025,transport,cash
+TXN009,db1b1d8c,expense,10,transport,27/10/2025,transport,cash
+TXN010,db1b1d8c,expense,10,transport,27/10/2025,transport,cash
+TXN011,db1b1d8c,expense,10,transport,27/10/2025,transport,cash
+TXN012,db1b1d8c,expense,20,food,26/10/2025,food,visa
+TXN013,db1b1d8c,expense,20,food,26/10/2025,food,visa
+TXN014,db1b1d8c,expense,20,food,26/10/2025,food,visa
+TXN015,db1b1d8c,expense,20,food,26/10/2025,food,visa
+TXN016,db1b1d8c,expense,250,savings,26/10/2025,savings,cash

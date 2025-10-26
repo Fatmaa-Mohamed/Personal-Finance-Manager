@@ -57,9 +57,10 @@ class PersonalFinanceApp:
             print("3. 🔄 Switch User")
             print("4. 💰 Transactions Menu")
             print("5. 📊 Reports Menu")
-            print("6. 🔒 Logout")
+            print("6. 📂 Data Management")
+            print("7. 🔒 Logout")
             
-            choice = input("👉🏼 Choose an option (1-6): ").strip()
+            choice = input("👉🏼 Choose an option (1-7): ").strip()
             
             if choice == "1":
                 self.user_manager.view_profile()
@@ -72,7 +73,39 @@ class PersonalFinanceApp:
             elif choice == "5":
                 self.reports.menu(self.current_user_id)
             elif choice == "6":
+                self.data_menu()
+            elif choice == "7":
                 self.user_manager.logout()
+                return
+            else:
+                print("❌ Invalid choice.")
+            pause()
+
+
+    # ---------------------------
+    # DATA MANAGEMENT SUBMENU
+    # ---------------------------
+
+    def data_menu(self):
+        while True:
+            print("\n=== 📂 Data Management ===")
+            print("1. Export transactions to CSV")
+            print("2. Import transactions from CSV")
+            print("3. Back")
+            
+            choice = input("👉🏼 Choose an option (1-3): ").strip()
+            user_id = self.current_user_id
+            
+            if choice == "1":
+                path = input("Enter file path to export to: ")
+                tx_list = self.data_manager.load_transactions()
+                self.data_manager.export_transactions_csv(user_id, tx_list, path)
+                print("✅ Transactions exported successfully.")
+            elif choice == "2":
+                path = input("Enter file path to import from: ")
+                added = self.data_manager.import_transactions_csv(user_id, path)
+                print(f"✅ Imported {added} new transactions.")
+            elif choice == "3":
                 return
             else:
                 print("❌ Invalid choice.")

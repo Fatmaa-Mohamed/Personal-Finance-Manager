@@ -182,7 +182,7 @@ class TransactionManager:
         # Category
         new_category = input(f"Category [{tx['category']}]: ").strip() or tx["category"]
         # Date
-        new_date = input(f"Date [YYYY-MM-DD] [{tx['date']}]: ").strip() or tx["date"]
+        new_date = input(f"Date [YYYY/MM/DD] [{tx['date']}]: ").strip() or tx["date"]
         # Description
         new_desc = input(f"Description [{tx['description']}]: ").strip() or tx["description"]
         # Payment method
@@ -337,7 +337,7 @@ class TransactionManager:
         target = input_positive_float("Target amount: ")
 
         # 2) Compute progress from existing transactions
-        total_saved = 0.0
+        total_saved = decimal("0")
         for t in self.transactions:
             if t.get("user_id") != user_id:
                 continue
@@ -349,8 +349,8 @@ class TransactionManager:
                 except Exception:
                     pass
 
-        remaining = max(0.0, decimal(target) - total_saved)
-        pct = 0.0 if decimal(target) <= 0 else min(100.0, (total_saved / decimal(target)) * 100.0)
+        remaining = max(decimal("0"), decimal(target) - total_saved)
+        pct = decimal("0") if decimal(target) <= decimal("0") else min(decimal("100"), (total_saved / decimal(target)) * decimal("100"))
 
         # 3) Try to persist in goals.json if DataManager supports it (optional)
         try:
@@ -361,15 +361,15 @@ class TransactionManager:
                 for g in goals:
                     if str(g.get("name", "")).strip().lower() == name.strip().lower():
                         g["name"] = name
-                        g["target"] = decimal(target)
-                        g["saved_snapshot"] = total_saved  # snapshot at this check
+                        g["target"] = str(target)
+                        g["saved_snapshot"] = str(total_saved)  # snapshot at this check
                         updated = True
                         break
                 if not updated:
                     goals.append({
                         "name": name,
-                        "target": decimal(target),
-                        "saved_snapshot": total_saved
+                        "target": str(target),
+                        "saved_snapshot": str(total_saved)
                     })
                 self.data_manager.save_goals(goals)
         except Exception:
@@ -379,10 +379,10 @@ class TransactionManager:
         # 4) Display summary
         print("\n=== Savings Goal Summary ===")
         print(f"Goal:       {name}")
-        print(f"Target:     {decimal(target):.2f}")
-        print(f"Saved (via 'savings' expenses): {total_saved:.2f}")
-        print(f"Remaining:  {remaining:.2f}")
-        print(f"Progress:   {pct:5.1f}%")
+        print(f"Target:     {decimal(target)}")
+        print(f"Saved (via 'savings' expenses): {total_saved}")
+        print(f"Remaining:  {remaining}")
+        print(f"Progress:   {pct}%")
         if remaining <= 0:
             print("🎉 Congrats! You've reached (or exceeded) your savings goal.")
         print()
@@ -391,12 +391,14 @@ class TransactionManager:
 
     def menu(self, user_id: str):
         while True:
-            print("=== 💼 TRANSACTIONS MENU ===")
+            print("\n=== 💼 TRANSACTIONS MENU ===")
             print("1. ➕ Add Transaction")
             print("2. 📋 View All Transactions")
             print("3. ✏️ Edit Transaction")
             print("4. 🗑️ Delete Transaction")
-            print("5. 🔙 Back")
+            print("5. 🔁 Add Recurring Transaction")
+            print("6. 🏆 Savings Goal")
+            print("7. 🔙 Back")
 
             choice = input("Enter your choice: ").strip()
             if choice == "1":
@@ -408,6 +410,10 @@ class TransactionManager:
             elif choice == "4":
                 self.delete_transaction_interactive(user_id)
             elif choice == "5":
+                self.recurring_transaction(user_id)
+            elif choice == "6":
+                self.savings_goal_quick(user_id)
+            elif choice == "7":
                 return
             else:
                 print("❌ Invalid choice.")
