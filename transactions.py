@@ -1,6 +1,7 @@
 from utils import input_non_empty, input_positive_float, today_str, next_yearly_date, next_monthly_date, today_date, parse_date, format_date, pause
 from decimal import Decimal as decimal
 from datetime import timedelta
+
 class TransactionManager:
     def __init__(self, data_manager):
         """Initialize the transaction manager and load persisted transactions.

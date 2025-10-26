@@ -1,3 +1,0 @@
-transaction_id,user_id,type,amount,category,date,description,payment_method
-TXN001,0f765791,income,1000.0,bonus,26/10/2025,binus,visa
-TXN002,0f765791,expense,100.0,savings,26/10/2025,savings,cash

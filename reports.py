@@ -3,6 +3,7 @@ from collections import defaultdict
 from utils import pause, parse_date
 from data_manager import DataManager
 from decimal import Decimal as decimal
+import calendar
 
 class Reports:
     def __init__(self, data_manager: DataManager):
@@ -246,10 +247,6 @@ class Reports:
         Vertical ASCII chart of total expenses over the last 12 months.
         Each column = one month. The higher the column, the higher the expense.
         """
-        from datetime import date
-        from collections import defaultdict
-        import calendar
-        from utils import parse_date
 
         txs = self.data_manager.get_transactions(user_id)
         if not txs:
