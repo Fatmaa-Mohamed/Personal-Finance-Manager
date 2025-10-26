@@ -244,20 +244,51 @@ class DataManager:
 
 
     #--------------- load/save goals --------------
-    def load_goals(self) -> list:
-        """Load saving goals from goals.json, returning an empty list if missing or invalid."""
+    def load_goals(self, user_id: str) -> list:
+        """Load saving goals for a specific user_id from goals.json.
+        Backward compatible: if file contains a flat list, return it; otherwise, return dict[user_id] or []."""
         path = "data/goals.json"
         if not os.path.exists(path):
             return []
-        with open(path, "r", encoding="utf-8") as f:
-            try:
-                return json.load(f)
-            except Exception:
-                return []
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            return []
 
-    def save_goals(self, goals: list):
-        """Persist the given list of saving goals to goals.json."""
+        # Old format: a flat list for everyone
+        if isinstance(data, list):
+            return data
+        # New format: dict keyed by user_id
+        if isinstance(data, dict):
+            goals = data.get(user_id, [])
+            return goals if isinstance(goals, list) else []
+        return []
+
+    def save_goals(self, user_id: str, goals: list):
+        """Persist goals for a specific user_id to goals.json.
+        Maintains a dict keyed by user_id and preserves other users' goals."""
         path = "data/goals.json"
         os.makedirs("data", exist_ok=True)
+
+        # Load existing structure (dict keyed by user_id) or migrate from old list
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    existing = json.load(f)
+            except Exception:
+                existing = {}
+        else:
+            existing = {}
+
+        if isinstance(existing, list):
+            # Old global list → migrate to dict under this user_id
+            data = {user_id: goals if isinstance(goals, list) else []}
+        elif isinstance(existing, dict):
+            data = existing
+            data[user_id] = goals if isinstance(goals, list) else []
+        else:
+            data = {user_id: goals if isinstance(goals, list) else []}
+
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(goals, f, ensure_ascii=False, indent=2)
+            json.dump(data, f, ensure_ascii=False, indent=2)

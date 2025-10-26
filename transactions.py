@@ -377,7 +377,7 @@ class TransactionManager:
         # 3) Try to persist in goals.json if DataManager supports it (optional)
         try:
             if hasattr(self.data_manager, "load_goals") and hasattr(self.data_manager, "save_goals"):
-                goals = self.data_manager.load_goals() or []
+                goals = self.data_manager.load_goals(user_id) or []
                 # Update existing goal by name if found; else append a new one
                 updated = False
                 for g in goals:
@@ -393,7 +393,7 @@ class TransactionManager:
                         "target": float(target),
                         "saved_snapshot": total_saved
                     })
-                self.data_manager.save_goals(goals)
+                self.data_manager.save_goals(user_id, goals)
         except Exception:
             # Persistence is optional; ignore if not available
             pass
