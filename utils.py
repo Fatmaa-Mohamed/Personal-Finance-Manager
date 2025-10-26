@@ -35,12 +35,12 @@ def input_non_empty(prompt: str) -> str:
             return text
         print("❌Please enter a non-empty string")
 
-def input_positive_float(prompt: str) -> decimal:
+def input_positive_float(prompt: str) -> float:
     """Prompt until a positive decimal number is entered and return it."""
     while True:
         raw = input(prompt).strip()
         try:
-            val = decimal(raw)
+            val = float(raw)
             if val <= 0:
                 print("❌Please enter a positive number")
                 continue
