@@ -401,65 +401,67 @@ class TransactionManager:
     #---------------------------------- AF: saving goals -------------------------------------------
     def savings_goal(self, user_id: str):
         """
-        Create/refresh a simple savings goal and show progress.
-        - All transactions where category == "savings" and type == "expense"
-          are counted as contributions toward the goal.
+        Create or update a savings goal for a specific user.
+        Progress is calculated from 'savings' expenses.
+        Stores all numbers as strings in JSON, uses Decimal for calculations.
         """
-        print("\n🏆 Savings Goal (quick)")
+        print("\n🏆 Savings Goal")
 
-        # 1) Ask user for goal details
-        name = input("Goal name (e.g., 'Emergency Fund') [Enter for 'Savings Goal'] : ").strip() or "Savings Goal"
-        target = input_positive_float("Target amount: ")
-
-        # 2) Compute progress from existing transactions
-        total_saved = 0.0
+        # Ask user for goal info
+        name = input("Goal name (e.g., 'Emergency Fund') [Enter for 'Savings Goal']: ").strip() or "Savings Goal"
+        target_str = input("Target amount: ").strip() or "0"
+    
+        try:
+            target = decimal(target_str)
+        except Exception:
+            print("❌ Invalid number. Goal not created.")
+            return
+    
+        # Load existing goals for this user
+        goals = self.data_manager.load_goals(user_id) or []
+    
+        # Calculate how much this user has saved so far
+        total_saved = decimal("0")
         for t in self.transactions:
-            if t.get("user_id") != user_id:
-                continue
-            # Count only 'savings' OUTGOING (expense) as contributions
-            if (str(t.get("category", "")).strip().lower() == "savings"
-                    and str(t.get("type", "")).strip().lower() == "expense"):
+            if (
+                t.get("user_id") == user_id
+                and str(t.get("type", "")).lower() == "expense"
+                and str(t.get("category", "")).lower() == "savings"
+            ):
                 try:
-                    total_saved += float(t.get("amount", 0) or 0)
+                    total_saved += decimal(str(t.get("amount", "0")))
                 except Exception:
                     pass
-
-        remaining = max(0.0, float(target) - total_saved)
-        pct = 0.0 if float(target) <= 0 else min(100.0, (total_saved / float(target)) * 100.0)
-
-        # 3) Try to persist in goals.json if DataManager supports it (optional)
-        try:
-            if hasattr(self.data_manager, "load_goals") and hasattr(self.data_manager, "save_goals"):
-                goals = self.data_manager.load_goals(user_id) or []
-                # Update existing goal by name if found; else append a new one
-                updated = False
-                for g in goals:
-                    if str(g.get("name", "")).strip().lower() == name.strip().lower():
-                        g["name"] = name
-                        g["target"] = float(target)
-                        g["saved_snapshot"] = total_saved  # snapshot at this check
-                        updated = True
-                        break
-                if not updated:
-                    goals.append({
-                        "name": name,
-                        "target": float(target),
-                        "saved_snapshot": total_saved
-                    })
-                self.data_manager.save_goals(user_id, goals)
-        except Exception:
-            # Persistence is optional; ignore if not available
-            pass
-
-        # 4) Display summary
+    
+        # Check if goal already exists
+        existing_goal = next((g for g in goals if g["name"].lower() == name.lower()), None)
+        if existing_goal:
+            existing_goal["target"] = str(target)
+            existing_goal["saved"] = str(total_saved)
+        else:
+            goals.append({
+                "name": name,
+                "target": str(target),
+                "saved": str(total_saved)
+            })
+    
+        # Save updated goals for this user
+        self.data_manager.save_goals(user_id, goals)
+    
+        # Compute progress
+        remaining = max(decimal("0"), target - total_saved)
+        pct = decimal("0") if target <= 0 else min(decimal("100"), (total_saved / target) * decimal("100"))
+    
+        # Display summary
         print("\n=== Savings Goal Summary ===")
         print(f"Goal:       {name}")
-        print(f"Target:     {float(target):.2f}")
-        print(f"Saved (via 'savings' expenses): {total_saved:.2f}")
+        print(f"Target:     {target:.2f}")
+        print(f"Saved:      {total_saved:.2f}")
         print(f"Remaining:  {remaining:.2f}")
-        print(f"Progress:   {pct:5.1f}%")
+        print(f"Progress:   {pct:.1f}%")
+    
         if remaining <= 0:
-            print("🎉 Congrats! You've reached (or exceeded) your savings goal.")
+            print("🎉 Congrats! You've reached your savings goal!")
         print()
 
     def export_transactions_interactive(self, user_id: str):

@@ -269,7 +269,13 @@ class PersonalFinanceApp:
             elif choice == "2":
                 self.user_manager.change_password()
             elif choice == "3":
-                self.user_manager.switch_user()
+                new_user = self.user_manager.switch_user()
+                if new_user:
+                    self.current_user = new_user
+                    self.current_user_id = new_user["user_id"]
+                    print(f"🔄 Now logged in as {new_user['name']}")
+                else:
+                    print("⚠️ Switch cancelled or failed.")
             elif choice == "4":
                 self.transaction_manager.menu(self.current_user_id)
             elif choice == "5":
