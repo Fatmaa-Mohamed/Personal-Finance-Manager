@@ -236,7 +236,7 @@ class TransactionManager:
 
         #validate input
         while True:
-            t_type = input("type[income/expense]: ]").strip().lower()
+            t_type = input("type[income/expense]: ").strip().lower()
             if t_type in {"income", "expense"}:
                 break
             print("Please enter either 'income' or 'expense'.")
@@ -326,14 +326,14 @@ class TransactionManager:
 
 
     #--------------- saving goals ----------------
-    def savings_goal_quick(self, user_id: str):
+    def savings_goal(self, user_id: str):
         """
         Create/refresh a simple savings goal and show progress.
         - All transactions where category == "savings" and type == "expense"
           are counted as contributions toward the goal.
         - If DataManager has load_goals/save_goals, the goal is persisted/updated.
         """
-        print("\n🏆 Savings Goal (quick)")
+        print("\n🏆 Savings Goal")
 
         # 1) Ask user for goal details
         name = input("Goal name (e.g., 'Emergency Fund') [Enter for 'Savings Goal'] : ").strip() or "Savings Goal"
@@ -390,6 +390,31 @@ class TransactionManager:
             print("🎉 Congrats! You've reached (or exceeded) your savings goal.")
         print()
 
+    def export_transactions_interactive(self, user_id: str):
+        """
+        Ask the user where to save the CSV and export all transactions for this user.
+        """
+        print("\n💾 Export Transactions to CSV")
+        path = input("Enter filename (e.g., data/exports/my_transactions.csv): ").strip()
+        if not path:
+            print("❌ No file path provided.")
+            return
+        tx_list = self.list_transactions(user_id)
+        self.data_manager.export_transactions_csv(user_id, tx_list, path)
+        print(f"✅ Exported {len(tx_list)} transactions to {path}\n")
+
+    def import_transactions_interactive(self, user_id: str):
+        """
+        Ask for a CSV file path and import its transactions into the system.
+        """
+        print("\n📥 Import Transactions from CSV")
+        path = input("Enter CSV file path to import: ").strip()
+        if not path:
+            print("❌ No file path provided.")
+            return
+        added = self.data_manager.import_transactions_csv(user_id, path)
+        print(f"✅ Imported {added} new transactions.\n")
+
     #-------------------------Transactions menu----------------------------
 
     def menu(self, user_id: str):
@@ -401,7 +426,9 @@ class TransactionManager:
             print("4. 🗑️ Delete Transaction")
             print("5. 🔁 Add Recurring Transaction")
             print("6. 🏆 Savings Goal")
-            print("7. 🔙 Back")
+            print("7. 💾 Export to csv")
+            print("8. 📥 Import from csv")
+            print("9. 🔙 Back")
 
             choice = input("Enter your choice: ").strip()
             if choice == "1":
@@ -415,8 +442,12 @@ class TransactionManager:
             elif choice == "5":
                 self.recurring_transaction(user_id)
             elif choice == "6":
-                self.savings_goal_quick(user_id)
+                self.savings_goal(user_id)
             elif choice == "7":
+                self.export_transactions_interactive(user_id)
+            elif choice == "8":
+                self.import_transactions_interactive(user_id)
+            elif choice == "9":
                 return
             else:
                 print("❌ Invalid choice.")
