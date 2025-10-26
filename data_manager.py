@@ -196,7 +196,7 @@ class DataManager:
                 writer.writerow(row)
         self.transactions = self.load_transactions()
 
-    # --------- csv import/export ----------------
+    # --------- Advanced features csv import/export ----------------
     def export_transactions_csv(self, user_id: str, tx_list: list, path: str):
         fieldnames = ["transaction_id", "user_id", "type", "amount", "category", "date", "description",
                       "payment_method"]

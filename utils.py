@@ -99,6 +99,3 @@ def bar(value: float, scale: float = 100.0, char: str = "#", width: int = 30) ->
     except Exception:
         n = 0
     return char * n
-
-def clear_screen():
-    os.system('cls' if os.name == 'nt' else 'clear')
